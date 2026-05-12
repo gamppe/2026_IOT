@@ -1,0 +1,1571 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=1280"/>
+<title>Pull-Up · Pull-Down · 풀업 풀다운 저항 [V2]</title>
+<style>
+/* =========================================================
+   UNIFIED CRT THEME — Lecture 03 · Pull-up / Pull-down
+   Pure-black background, high-contrast cyan/amber phosphor
+   (Shared palette with Lecture 04 Semiconductor V2)
+   ========================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=VT323&family=JetBrains+Mono:wght@400;500;700&family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --bg:        #000000;
+  --bg-2:      #050609;
+  --bg-3:      #0a0d12;
+  --line:      #1f3a5c;
+  --line-dim:  #112340;
+
+  --phos:      #9DD4FF;
+  --phos-hi:   #E6F2FF;
+  --phos-dim:  #5B89BD;
+  --phos-deep: #2A4F7A;
+
+  --high:      #FFD645;
+  --low:       #FF5C72;
+  --ok:        #5BFFA8;
+  --warn:      #FFA040;
+  --pos:       #FFB347;
+  --neg:       #66D9FF;
+
+  --glow:        0 0 5px rgba(157, 212, 255, 0.55), 0 0 14px rgba(157, 212, 255, 0.20);
+  --glow-strong: 0 0 7px rgba(157, 212, 255, 0.80), 0 0 22px rgba(157, 212, 255, 0.40);
+  --glow-high:   0 0 6px rgba(255, 214, 69, 0.75), 0 0 18px rgba(255, 214, 69, 0.35);
+  --glow-low:    0 0 6px rgba(255, 92, 114, 0.75), 0 0 18px rgba(255, 92, 114, 0.35);
+  --glow-ok:     0 0 6px rgba(91, 255, 168, 0.75), 0 0 18px rgba(91, 255, 168, 0.35);
+
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+  --term: 'VT323', 'JetBrains Mono', monospace;
+  --kr:   'IBM Plex Sans KR', system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--phos);
+  font-family: var(--mono);
+  font-size: 14px;
+  line-height: 1.55;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      rgba(0,0,0,0) 0px,
+      rgba(0,0,0,0) 2px,
+      rgba(0,0,0,0.45) 3px,
+      rgba(0,0,0,0) 4px
+    );
+  mix-blend-mode: multiply;
+  z-index: 9000;
+}
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at center, rgba(0,0,0,0) 60%, rgba(0,0,0,0.7) 100%);
+  z-index: 9001;
+}
+
+@keyframes crt-flicker {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.985; }
+}
+.crt-screen { animation: crt-flicker 4.2s infinite; }
+
+.topnav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 32px;
+  max-width: 1680px;
+  margin: 0 auto;
+  height: 38px;
+  border-bottom: 1px solid var(--line-dim);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  color: var(--phos-deep);
+  text-transform: uppercase;
+}
+.topnav a {
+  color: var(--phos);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  padding-bottom: 2px;
+  transition: all 0.15s;
+}
+.topnav a:hover {
+  color: var(--phos-hi);
+  border-bottom-color: var(--phos);
+  text-shadow: var(--glow);
+}
+.topnav .center {
+  font-family: var(--term);
+  font-size: 16px;
+  letter-spacing: 0.15em;
+  color: var(--phos);
+  text-shadow: var(--glow);
+}
+
+.app {
+  max-width: 1680px;
+  margin: 0 auto;
+  padding: 28px 32px 80px;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 14px;
+  margin-bottom: 24px;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.brand-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: var(--phos-dim);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.brand-row .dot {
+  width: 8px; height: 8px; background: var(--ok); border-radius: 50%;
+  box-shadow: var(--glow-ok);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.4; }
+}
+
+h1 {
+  font-family: var(--kr);
+  font-weight: 700;
+  font-size: 32px;
+  color: var(--phos-hi);
+  text-shadow: var(--glow-strong);
+  margin: 8px 0 6px;
+  letter-spacing: -0.01em;
+}
+.subtitle {
+  color: var(--phos-dim);
+  font-size: 13px;
+  font-family: var(--mono);
+  letter-spacing: 0.04em;
+}
+
+.meta {
+  text-align: right;
+  font-size: 11px;
+  color: var(--phos-dim);
+  letter-spacing: 0.12em;
+}
+.meta .row { margin: 2px 0; }
+.meta .v { color: var(--phos); }
+
+.lede {
+  font-family: var(--kr);
+  color: var(--phos);
+  font-size: 14px;
+  line-height: 1.8;
+  max-width: 1080px;
+  margin-bottom: 24px;
+  border-left: 2px solid var(--line);
+  padding: 4px 0 4px 18px;
+}
+.lede .em  { color: var(--phos-hi); text-shadow: var(--glow); font-weight: 500; }
+.lede .red { color: var(--low); }
+.lede .yel { color: var(--high); }
+.lede .grn { color: var(--ok); }
+
+.controls {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 24px;
+  align-items: center;
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+  padding: 18px 22px;
+  margin-bottom: 28px;
+  position: relative;
+}
+.controls::before {
+  content: "CONTROL PANEL · 제어판";
+  position: absolute;
+  top: -8px; left: 16px;
+  background: var(--bg);
+  padding: 0 8px;
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  color: var(--phos-dim);
+}
+
+.ctrl-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ctrl-label {
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  color: var(--phos-dim);
+  text-transform: uppercase;
+}
+.ctrl-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.ctrl-value {
+  font-family: var(--mono);
+  font-weight: 700;
+  color: var(--phos-hi);
+  text-shadow: var(--glow);
+  min-width: 80px;
+  font-size: 14px;
+}
+
+input[type=range] {
+  -webkit-appearance: none;
+  appearance: none;
+  flex: 1;
+  height: 4px;
+  background: var(--line);
+  outline: none;
+  cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px; height: 14px;
+  background: var(--phos);
+  border: 1px solid var(--phos-hi);
+  box-shadow: var(--glow);
+  cursor: pointer;
+  border-radius: 0;
+}
+input[type=range]::-moz-range-thumb {
+  width: 14px; height: 14px;
+  background: var(--phos);
+  border: 1px solid var(--phos-hi);
+  box-shadow: var(--glow);
+  cursor: pointer;
+  border-radius: 0;
+}
+
+.press-btn {
+  appearance: none;
+  background: transparent;
+  color: var(--phos-hi);
+  border: 1px solid var(--phos);
+  font-family: var(--mono);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  font-size: 13px;
+  padding: 14px 28px;
+  cursor: pointer;
+  text-shadow: var(--glow);
+  box-shadow: var(--glow);
+  transition: all 0.08s ease;
+  user-select: none;
+  position: relative;
+}
+.press-btn:hover {
+  background: rgba(157, 212, 255, 0.08);
+}
+.press-btn.active,
+.press-btn:active {
+  background: var(--phos);
+  color: #000;
+  text-shadow: none;
+  box-shadow: var(--glow-strong);
+}
+.press-btn .key {
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: var(--phos-dim);
+  display: block;
+  margin-top: 4px;
+}
+.press-btn.active .key { color: rgba(0,0,0,0.6); }
+
+.mode-radio {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+}
+.mode-opt {
+  position: relative;
+  padding: 8px 14px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  border-right: 1px solid var(--line);
+  min-width: 90px;
+  transition: background 0.1s;
+}
+.mode-opt:last-child { border-right: 0; }
+.mode-opt input { position: absolute; opacity: 0; pointer-events: none; }
+.mode-opt .m-l {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--phos-dim);
+}
+.mode-opt .m-s {
+  font-family: var(--kr);
+  font-size: 10px;
+  color: var(--phos-deep);
+  letter-spacing: 0.05em;
+}
+.mode-opt:hover { background: rgba(157,212,255,0.06); }
+.mode-opt.on { background: rgba(157,212,255,0.14); }
+.mode-opt.on .m-l { color: var(--phos-hi); text-shadow: var(--glow); }
+.mode-opt.on .m-s { color: var(--phos); }
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.scenario {
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+.scenario.danger  { border-color: rgba(255, 92, 114, 0.45); }
+.scenario.pullup  { border-color: rgba(255, 214, 69, 0.40); }
+.scenario.pulldn  { border-color: rgba(91, 255, 168, 0.40); }
+
+.scn-header {
+  border-bottom: 1px solid var(--line-dim);
+  padding: 14px 18px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.scn-tag {
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  color: var(--phos-dim);
+}
+.scn-title {
+  font-family: var(--kr);
+  font-weight: 600;
+  font-size: 19px;
+  color: var(--phos-hi);
+  text-shadow: var(--glow);
+  margin-top: 4px;
+}
+.scn-title .en {
+  display: block;
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--phos-dim);
+  text-shadow: none;
+  margin-top: 4px;
+}
+.danger .scn-title { color: #FFB6C0; text-shadow: var(--glow-low); }
+.pullup .scn-title { color: var(--high); text-shadow: var(--glow-high); }
+.pulldn .scn-title { color: var(--ok);   text-shadow: var(--glow-ok); }
+
+.scn-status {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--phos-dim);
+  text-align: right;
+}
+.scn-status .v { color: var(--phos-hi); }
+
+.panel {
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--line-dim);
+}
+.panel:last-child { border-bottom: 0; }
+.panel-label {
+  font-size: 9px;
+  letter-spacing: 0.28em;
+  color: var(--phos-deep);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.switch-stage {
+  background: radial-gradient(ellipse at center, var(--bg-3) 0%, var(--bg) 80%);
+  border: 1px solid var(--line-dim);
+  height: 170px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.switch-stage svg { width: 100%; height: 100%; }
+
+.circuit-stage {
+  background: radial-gradient(ellipse at center, var(--bg-3) 0%, var(--bg) 80%);
+  border: 1px solid var(--line-dim);
+  height: 220px;
+  position: relative;
+}
+.circuit-stage svg { width: 100%; height: 100%; }
+
+.scope-stage {
+  background: #000;
+  border: 1px solid var(--line-dim);
+  height: 150px;
+  position: relative;
+  overflow: hidden;
+}
+.scope-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(to right, rgba(157,212,255,0.10) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(157,212,255,0.10) 1px, transparent 1px);
+  background-size: 10% 25%;
+  pointer-events: none;
+}
+.scope-label {
+  position: absolute;
+  top: 6px; left: 8px;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: var(--phos-dim);
+}
+.scope-stage svg { width: 100%; height: 100%; display: block; }
+
+.readout {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 14px;
+  align-items: center;
+}
+.led {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #1a1006 0%, #050201 70%);
+  border: 1px solid var(--line);
+  position: relative;
+}
+.led.on {
+  background: radial-gradient(circle at 35% 30%, #FFE9A0 0%, #FFB347 35%, #6e3a00 80%);
+  box-shadow:
+    0 0 12px rgba(255,179,71,0.85),
+    0 0 32px rgba(255,179,71,0.45),
+    inset 0 0 10px rgba(255,255,255,0.4);
+}
+.led-label {
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  color: var(--phos-dim);
+}
+.led-label .state {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  margin-top: 2px;
+  color: var(--phos-hi);
+  text-shadow: var(--glow);
+}
+.led-label .state.HIGH { color: var(--high); text-shadow: var(--glow-high); }
+.led-label .state.LOW  { color: var(--low);  text-shadow: var(--glow-low); }
+.led-label .state.FLOAT { color: var(--phos-dim); text-shadow: none; font-style: italic; }
+.led-label .state.UNDEF { color: var(--low);  text-shadow: var(--glow-low); }
+
+.volt-readout {
+  text-align: right;
+  font-family: var(--mono);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--phos-hi);
+  text-shadow: var(--glow);
+  letter-spacing: 0.02em;
+  min-width: 80px;
+}
+.volt-readout .u { font-size: 11px; color: var(--phos-dim); margin-left: 4px; }
+
+.notes {
+  padding: 14px 18px 18px;
+  border-top: 1px solid var(--line-dim);
+  background: rgba(255,255,255,0.012);
+}
+.notes ul {
+  list-style: none;
+  padding: 0; margin: 0;
+}
+.notes li {
+  font-family: var(--kr);
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--phos);
+  padding: 4px 0 4px 18px;
+  position: relative;
+}
+.notes li::before {
+  content: ">";
+  position: absolute; left: 0; top: 4px;
+  color: var(--phos-deep);
+  font-family: var(--mono);
+}
+.notes .em  { color: var(--phos-hi); text-shadow: var(--glow); }
+.notes .red { color: var(--low); }
+.notes .yel { color: var(--high); }
+.notes .grn { color: var(--ok); }
+.notes .term {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--phos);
+  background: rgba(157,212,255,0.08);
+  padding: 1px 5px;
+  border: 1px solid var(--line-dim);
+  letter-spacing: 0.04em;
+}
+
+.summary {
+  margin-top: 36px;
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+  position: relative;
+}
+.summary::before {
+  content: "SUMMARY · 핵심 비교표";
+  position: absolute;
+  top: -8px; left: 16px;
+  background: var(--bg);
+  padding: 0 8px;
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  color: var(--phos-dim);
+}
+.summary table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+.summary th, .summary td {
+  padding: 12px 18px;
+  text-align: left;
+  border-bottom: 1px solid var(--line-dim);
+  font-family: var(--kr);
+  vertical-align: top;
+}
+.summary th {
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 10.5px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--phos-dim);
+  background: var(--bg-3);
+}
+.summary td:first-child {
+  font-family: var(--mono);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  width: 14%;
+}
+.summary tr.danger td:first-child { color: var(--low); text-shadow: var(--glow-low); }
+.summary tr.pullup td:first-child { color: var(--high); text-shadow: var(--glow-high); }
+.summary tr.pulldn td:first-child { color: var(--ok); text-shadow: var(--glow-ok); }
+.summary tr:last-child td { border-bottom: 0; }
+.summary .red { color: var(--low); }
+.summary .yel { color: var(--high); }
+.summary .grn { color: var(--ok); }
+.summary .em  { color: var(--phos-hi); text-shadow: var(--glow); }
+.summary .term {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--phos);
+  background: rgba(157,212,255,0.08);
+  padding: 1px 5px;
+  border: 1px solid var(--line-dim);
+}
+
+.formula {
+  margin-top: 36px;
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+  padding: 24px 28px;
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+}
+.formula::before {
+  content: "REFERENCE · 설계 공식 & 코드";
+  position: absolute;
+  top: -8px; left: 16px;
+  background: var(--bg);
+  padding: 0 8px;
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  color: var(--phos-dim);
+}
+.formula h3 {
+  font-family: var(--kr);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--phos-hi);
+  text-shadow: var(--glow);
+  margin: 0 0 10px;
+  letter-spacing: 0.02em;
+}
+.formula h3:not(:first-child) { margin-top: 18px; }
+.formula p {
+  font-family: var(--kr);
+  font-size: 12.5px;
+  color: var(--phos);
+  line-height: 1.65;
+  margin: 0 0 10px;
+}
+.formula .eq {
+  display: block;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--high);
+  text-shadow: var(--glow-high);
+  background: rgba(255,214,69,0.06);
+  padding: 8px 12px;
+  margin: 6px 0 10px;
+  border-left: 2px solid var(--high);
+  letter-spacing: 0.02em;
+}
+.formula pre {
+  background: #000;
+  border: 1px solid var(--line-dim);
+  padding: 12px 14px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--phos);
+  margin: 0 0 10px;
+  overflow-x: auto;
+  line-height: 1.55;
+}
+.formula pre .kw   { color: var(--high); }
+.formula pre .com  { color: var(--phos-deep); }
+.formula pre .str  { color: var(--ok); }
+.formula pre .num  { color: var(--low); }
+
+@media (max-width: 1100px) {
+  .grid-3 { grid-template-columns: 1fr; }
+  .formula { grid-template-columns: 1fr; }
+}
+
+.foot {
+  margin-top: 28px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  color: var(--phos-deep);
+}
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <div>SYS · CRT-MK4 / B7 PHOSPHOR / 60Hz</div>
+  <div class="center">PULL-UP &amp; PULL-DOWN · LECTURE 03</div>
+  <div><a href="Semiconductor Lecture V2.html">LECTURE 04 · SEMICONDUCTOR →</a></div>
+</nav>
+<div id="root"></div>
+<script>
+window.addEventListener('error', (e) => {
+  if (e.message && e.message.includes('ResizeObserver loop')) {
+    e.stopImmediatePropagation();
+    e.preventDefault();
+  }
+});
+</script>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" data-presets="react">
+const SwitchCross = ({ pressed, bouncing }) => {
+  const [jitter, setJitter] = React.useState(0);
+  const [contactBreak, setContactBreak] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!bouncing || !pressed) {
+      setJitter(0);
+      setContactBreak(false);
+      return;
+    }
+    let alive = true;
+    const tick = () => {
+      if (!alive) return;
+      setJitter((Math.random() - 0.5) * 2.4);
+      setContactBreak(Math.random() < 0.45);
+      setTimeout(tick, 35 + Math.random() * 40);
+    };
+    tick();
+    return () => { alive = false; };
+  }, [bouncing, pressed]);
+
+  const plungerY = pressed ? 38 + jitter : 22;
+  const contactClosed = pressed && !contactBreak;
+
+  return (
+    <svg viewBox="0 0 280 170" preserveAspectRatio="xMidYMid meet">
+      <defs>
+        <linearGradient id="bodyGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#1f3a5c" stopOpacity="0.35" />
+          <stop offset="1" stopColor="#112340" stopOpacity="0.18" />
+        </linearGradient>
+        <linearGradient id="plungerGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#9DD4FF" stopOpacity="0.28" />
+          <stop offset="1" stopColor="#9DD4FF" stopOpacity="0.10" />
+        </linearGradient>
+        <filter id="phosGlow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="1.2" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+
+      <g stroke="#9DD4FF" strokeWidth="1" fill="none" filter="url(#phosGlow)">
+        <rect x="60" y="20" width="160" height="120" fill="url(#bodyGrad)" />
+        <rect x="100" y="8" width="80" height="14" fill="url(#bodyGrad)" />
+        <rect x="80" y="50" width="120" height="80" stroke="#5B89BD" strokeDasharray="2 2" />
+      </g>
+
+      <g stroke="#5B89BD" strokeWidth="1" fill="none">
+        <path d={`M 140 ${22} L 134 ${28} L 146 ${32} L 134 ${36} L 146 ${40} L 134 ${44} L 146 ${48} L 140 ${52}`}
+              transform={pressed ? "scale(1, 0.6) translate(0, 18)" : ""} />
+      </g>
+
+      <g filter="url(#phosGlow)">
+        <rect x="120" y={plungerY - 10} width="40" height="14" fill="url(#plungerGrad)" stroke="#9DD4FF" strokeWidth="1.2"/>
+        <line x1="140" y1={plungerY + 4} x2="140" y2={plungerY + 32} stroke="#9DD4FF" strokeWidth="1.5"/>
+        <rect x="116" y={plungerY + 30} width="48" height="6" fill="#9DD4FF" fillOpacity="0.18" stroke="#9DD4FF" strokeWidth="1.4"/>
+      </g>
+
+      <g stroke="#9DD4FF" strokeWidth="1.4" fill="#9DD4FF" fillOpacity="0.14" filter="url(#phosGlow)">
+        <rect x="70"  y="92" width="34" height="6" />
+        <rect x="176" y="92" width="34" height="6" />
+        <line x1="60"  y1="95" x2="40"  y2="95"/>
+        <line x1="220" y1="95" x2="240" y2="95"/>
+      </g>
+
+      <g fontFamily="JetBrains Mono, monospace" fontSize="9" fill="#5B89BD" letterSpacing="0.1em">
+        <text x="38" y="108" textAnchor="end">A</text>
+        <text x="242" y="108">B</text>
+      </g>
+
+      {contactClosed && (
+        <g>
+          <line x1="104" y1="95" x2="176" y2="95" stroke="#5BFFA8" strokeWidth="1.6" opacity="0.95"
+                style={{ filter: "drop-shadow(0 0 5px #5BFFA8)" }}/>
+          <circle cx="104" cy="95" r="2.5" fill="#5BFFA8" />
+          <circle cx="176" cy="95" r="2.5" fill="#5BFFA8" />
+        </g>
+      )}
+
+      {!pressed && (
+        <g stroke="#5B89BD" strokeWidth="1" fill="none" opacity="0.65">
+          <path d="M 140 0 L 140 6 M 136 3 L 140 7 L 144 3" />
+        </g>
+      )}
+
+      <g fontFamily="JetBrains Mono, monospace" fontSize="10" fill="#9DD4FF" letterSpacing="0.15em">
+        <text x="14" y="158" opacity="0.75">
+          {pressed
+            ? (contactBreak ? "OPEN  (bounce)" : "CLOSED")
+            : "OPEN"}
+        </text>
+        <text x="266" y="158" textAnchor="end" opacity="0.6">CROSS-SECTION</text>
+      </g>
+    </svg>
+  );
+};
+
+window.SwitchCross = SwitchCross;
+
+const VCC_COLOR  = "#FFD645";
+const GND_COLOR  = "#FF5C72";
+const WIRE       = "#9DD4FF";
+const WIRE_DIM   = "#5B89BD";
+const ACTIVE     = "#5BFFA8";
+
+const Resistor = ({ x, y, w = 40, h = 14, label, color = WIRE, vertical = false }) => {
+  const path = vertical
+    ? `M ${x} ${y} L ${x} ${y + 3} L ${x - 6} ${y + 6} L ${x + 6} ${y + 9} L ${x - 6} ${y + 12} L ${x + 6} ${y + 15} L ${x - 6} ${y + 18} L ${x + 6} ${y + 21} L ${x} ${y + 24} L ${x} ${y + h + 13}`
+    : `M ${x} ${y} L ${x + 3} ${y} L ${x + 6} ${y - 6} L ${x + 9} ${y + 6} L ${x + 12} ${y - 6} L ${x + 15} ${y + 6} L ${x + 18} ${y - 6} L ${x + 21} ${y + 6} L ${x + 24} ${y} L ${x + w + 13} ${y}`;
+  return (
+    <g>
+      <path d={path} stroke={color} strokeWidth="1.4" fill="none" />
+      <text x={vertical ? x + 14 : x + w/2 + 6} y={vertical ? y + h + 4 : y - 12}
+            fontFamily="JetBrains Mono, monospace" fontSize="9.5"
+            fill={color} textAnchor={vertical ? "start" : "middle"} letterSpacing="0.05em">
+        {label}
+      </text>
+    </g>
+  );
+};
+
+const Switch = ({ x, y, pressed, contactBreak }) => {
+  const closed = pressed && !contactBreak;
+  return (
+    <g>
+      <circle cx={x} cy={y} r="3" fill={WIRE} />
+      <circle cx={x + 44} cy={y} r="3" fill={WIRE} />
+      <line
+        x1={x + 1} y1={y}
+        x2={closed ? x + 43 : x + 38}
+        y2={closed ? y     : y - 14}
+        stroke={closed ? ACTIVE : WIRE}
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        style={closed ? { filter: "drop-shadow(0 0 3px #5BFFA8)" } : {}}
+      />
+      <text x={x + 22} y={y + 22} fontFamily="JetBrains Mono, monospace" fontSize="9"
+            fill={WIRE_DIM} textAnchor="middle" letterSpacing="0.1em">SW</text>
+    </g>
+  );
+};
+
+const Pin = ({ x, y, label, voltage, floating }) => {
+  const stateColor = floating ? "#5B89BD" : voltage > 2.5 ? VCC_COLOR : GND_COLOR;
+  return (
+    <g>
+      <rect x={x - 10} y={y - 10} width="20" height="20"
+            fill="rgba(157,212,255,0.07)" stroke={WIRE} strokeWidth="1"/>
+      <text x={x} y={y + 3} fontFamily="JetBrains Mono, monospace" fontSize="9"
+            fill={WIRE} textAnchor="middle" letterSpacing="0.04em">IN</text>
+      <text x={x} y={y - 16} fontFamily="JetBrains Mono, monospace" fontSize="9"
+            fill={stateColor} textAnchor="middle" letterSpacing="0.1em"
+            style={{ filter: floating ? "none" : `drop-shadow(0 0 3px ${stateColor})` }}>
+        {label}
+      </text>
+    </g>
+  );
+};
+
+const Rail = ({ y, label, color, w }) => (
+  <g>
+    <line x1="20" y1={y} x2={w - 20} y2={y} stroke={color} strokeWidth="1.4"
+          style={{ filter: `drop-shadow(0 0 2px ${color})` }}/>
+    <text x={w - 24} y={y - 6} fontFamily="JetBrains Mono, monospace" fontSize="9.5"
+          fill={color} textAnchor="end" letterSpacing="0.12em">{label}</text>
+  </g>
+);
+
+const CircuitFloating = ({ pressed, contactBreak, voltage }) => {
+  const W = 360, H = 220;
+  const VCC_Y = 26, GND_Y = 196;
+  const PIN_X = 230, PIN_Y = 110;
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet">
+      <Rail y={VCC_Y} label="VCC 5V" color={VCC_COLOR} w={W}/>
+      <Rail y={GND_Y} label="GND"    color={GND_COLOR} w={W}/>
+
+      <line x1="100" y1={VCC_Y} x2="100" y2={PIN_Y} stroke={WIRE} strokeWidth="1.3"/>
+      <Switch x={106} y={PIN_Y} pressed={pressed} contactBreak={contactBreak}/>
+      <line x1="150" y1={PIN_Y} x2={PIN_X - 10} y2={PIN_Y} stroke={WIRE} strokeWidth="1.3"/>
+
+      <Pin x={PIN_X} y={PIN_Y}
+           label={pressed && !contactBreak ? "HIGH" : "?  FLOAT"}
+           voltage={voltage}
+           floating={!(pressed && !contactBreak)}/>
+
+      {!(pressed && !contactBreak) && (
+        <g opacity="0.9">
+          <path d="M 160 110 q 6 -6 12 0 t 12 0 t 12 0 t 12 0"
+                stroke="#FF5C72" strokeWidth="1" fill="none" strokeDasharray="3 3">
+            <animate attributeName="stroke-dashoffset" from="0" to="-12" dur="0.6s" repeatCount="indefinite"/>
+          </path>
+          <text x="180" y="92" fontFamily="JetBrains Mono, monospace" fontSize="9"
+                fill="#FF5C72" textAnchor="middle" letterSpacing="0.1em"
+                style={{ filter: "drop-shadow(0 0 3px #FF5C72)" }}>
+            EMI / NOISE
+          </text>
+        </g>
+      )}
+
+      <text x="14" y="216" fontFamily="JetBrains Mono, monospace" fontSize="9"
+            fill={WIRE_DIM} letterSpacing="0.15em">SCHEMATIC · NO PULL</text>
+    </svg>
+  );
+};
+
+const CircuitPullUp = ({ pressed, contactBreak, voltage }) => {
+  const W = 360, H = 220;
+  const VCC_Y = 26, GND_Y = 196;
+  const PIN_X = 270, PIN_Y = 110;
+  const R_X = 150;
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet">
+      <Rail y={VCC_Y} label="VCC 5V" color={VCC_COLOR} w={W}/>
+      <Rail y={GND_Y} label="GND"    color={GND_COLOR} w={W}/>
+
+      <line x1={R_X} y1={VCC_Y} x2={R_X} y2={VCC_Y + 14} stroke={WIRE} strokeWidth="1.3"/>
+      <Resistor x={R_X} y={VCC_Y + 14} h={36} label="R_PU" color={VCC_COLOR} vertical/>
+      <line x1={R_X} y1={PIN_Y} x2={PIN_X - 10} y2={PIN_Y} stroke={WIRE} strokeWidth="1.3"/>
+      <circle cx={R_X} cy={PIN_Y} r="3" fill={WIRE}/>
+
+      <line x1={R_X} y1={PIN_Y} x2={R_X} y2={PIN_Y + 30} stroke={WIRE} strokeWidth="1.3"/>
+      <g transform={`translate(${R_X - 22}, ${PIN_Y + 30}) rotate(90 22 0)`}>
+        <Switch x={0} y={0} pressed={pressed} contactBreak={contactBreak}/>
+      </g>
+      <line x1={R_X} y1={PIN_Y + 74} x2={R_X} y2={GND_Y} stroke={WIRE} strokeWidth="1.3"/>
+
+      <Pin x={PIN_X} y={PIN_Y}
+           label={pressed && !contactBreak ? "LOW" : "HIGH"}
+           voltage={voltage}
+           floating={false}/>
+
+      {pressed && !contactBreak && (
+        <g opacity="0.95">
+          <path d={`M ${R_X + 10} 50 L ${R_X + 10} 90`} stroke={ACTIVE} strokeWidth="1.3"
+                fill="none" strokeDasharray="4 3">
+            <animate attributeName="stroke-dashoffset" from="0" to="-14" dur="0.6s" repeatCount="indefinite"/>
+          </path>
+          <text x={R_X + 22} y="72" fontFamily="JetBrains Mono, monospace" fontSize="9"
+                fill={ACTIVE} letterSpacing="0.1em">i</text>
+        </g>
+      )}
+
+      <text x="14" y="216" fontFamily="JetBrains Mono, monospace" fontSize="9"
+            fill={WIRE_DIM} letterSpacing="0.15em">SCHEMATIC · PULL-UP</text>
+    </svg>
+  );
+};
+
+const CircuitPullDown = ({ pressed, contactBreak, voltage }) => {
+  const W = 360, H = 220;
+  const VCC_Y = 26, GND_Y = 196;
+  const PIN_X = 270, PIN_Y = 110;
+  const R_X = 150;
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet">
+      <Rail y={VCC_Y} label="VCC 5V" color={VCC_COLOR} w={W}/>
+      <Rail y={GND_Y} label="GND"    color={GND_COLOR} w={W}/>
+
+      <line x1={R_X} y1={VCC_Y} x2={R_X} y2={VCC_Y + 16} stroke={WIRE} strokeWidth="1.3"/>
+      <g transform={`translate(${R_X - 22}, ${VCC_Y + 16}) rotate(90 22 0)`}>
+        <Switch x={0} y={0} pressed={pressed} contactBreak={contactBreak}/>
+      </g>
+      <line x1={R_X} y1={VCC_Y + 60} x2={R_X} y2={PIN_Y} stroke={WIRE} strokeWidth="1.3"/>
+
+      <circle cx={R_X} cy={PIN_Y} r="3" fill={WIRE}/>
+      <line x1={R_X} y1={PIN_Y} x2={PIN_X - 10} y2={PIN_Y} stroke={WIRE} strokeWidth="1.3"/>
+
+      <line x1={R_X} y1={PIN_Y} x2={R_X} y2={PIN_Y + 14} stroke={WIRE} strokeWidth="1.3"/>
+      <Resistor x={R_X} y={PIN_Y + 14} h={36} label="R_PD" color={ACTIVE} vertical/>
+      <line x1={R_X} y1={PIN_Y + 14 + 36 + 13} x2={R_X} y2={GND_Y} stroke={WIRE} strokeWidth="1.3"/>
+
+      <Pin x={PIN_X} y={PIN_Y}
+           label={pressed && !contactBreak ? "HIGH" : "LOW"}
+           voltage={voltage}
+           floating={false}/>
+
+      {pressed && !contactBreak && (
+        <g opacity="0.95">
+          <path d={`M ${R_X + 10} 50 L ${R_X + 10} 90`} stroke={ACTIVE} strokeWidth="1.3"
+                fill="none" strokeDasharray="4 3">
+            <animate attributeName="stroke-dashoffset" from="0" to="-14" dur="0.6s" repeatCount="indefinite"/>
+          </path>
+          <path d={`M ${R_X + 10} 130 L ${R_X + 10} 188`} stroke={ACTIVE} strokeWidth="1.3"
+                fill="none" strokeDasharray="4 3">
+            <animate attributeName="stroke-dashoffset" from="0" to="-14" dur="0.6s" repeatCount="indefinite"/>
+          </path>
+        </g>
+      )}
+
+      <text x="14" y="216" fontFamily="JetBrains Mono, monospace" fontSize="9"
+            fill={WIRE_DIM} letterSpacing="0.15em">SCHEMATIC · PULL-DOWN</text>
+    </svg>
+  );
+};
+
+window.CircuitFloating = CircuitFloating;
+window.CircuitPullUp   = CircuitPullUp;
+window.CircuitPullDown = CircuitPullDown;
+
+const { useState, useEffect, useRef, useCallback } = React;
+
+const Scope = ({ voltage, vMax = 5, color = "#9DD4FF", label = "V_PIN" }) => {
+  const W = 360, H = 150;
+  const PAD_L = 28, PAD_R = 10, PAD_T = 16, PAD_B = 18;
+  const PLOT_W = W - PAD_L - PAD_R;
+  const PLOT_H = H - PAD_T - PAD_B;
+
+  const yFor = (v) => PAD_T + PLOT_H * (1 - Math.max(0, Math.min(vMax, v)) / vMax);
+  const HIGH_Y = yFor(vMax);
+  const LOW_Y  = yFor(0);
+
+  const bufRef = useRef([]);
+  const N = 200;
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    let alive = true;
+    const loop = () => {
+      if (!alive) return;
+      const buf = bufRef.current;
+      buf.push(voltage);
+      if (buf.length > N) buf.shift();
+      setTick(x => x + 1);
+      reqRef.current = requestAnimationFrame(loop);
+    };
+    const reqRef = { current: requestAnimationFrame(loop) };
+    return () => { alive = false; cancelAnimationFrame(reqRef.current); };
+  }, [voltage]);
+
+  const buf = bufRef.current;
+  const pts = buf.map((v, i) => {
+    const x = PAD_L + (i / (N - 1)) * PLOT_W;
+    const y = yFor(v);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(" ");
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet">
+      <defs>
+        <filter id={`scopeGlow-${label}`} x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="1.4" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <linearGradient id={`scopeFill-${label}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor={color} stopOpacity="0.22"/>
+          <stop offset="1" stopColor={color} stopOpacity="0"/>
+        </linearGradient>
+      </defs>
+
+      <line x1={PAD_L} y1={HIGH_Y} x2={W - PAD_R} y2={HIGH_Y}
+            stroke="#FFD645" strokeWidth="0.8" strokeDasharray="3 3" opacity="0.5"/>
+      <line x1={PAD_L} y1={LOW_Y}  x2={W - PAD_R} y2={LOW_Y}
+            stroke="#FF5C72" strokeWidth="0.8" strokeDasharray="3 3" opacity="0.5"/>
+      <line x1={PAD_L} y1={yFor(vMax * 0.5)} x2={W - PAD_R} y2={yFor(vMax * 0.5)}
+            stroke="#5B89BD" strokeWidth="0.6" strokeDasharray="2 4" opacity="0.45"/>
+
+      <text x={PAD_L - 6} y={HIGH_Y + 3} fontFamily="JetBrains Mono, monospace" fontSize="8"
+            fill="#FFD645" textAnchor="end" opacity="0.85">5V</text>
+      <text x={PAD_L - 6} y={LOW_Y + 3} fontFamily="JetBrains Mono, monospace" fontSize="8"
+            fill="#FF5C72" textAnchor="end" opacity="0.85">0V</text>
+      <text x={PAD_L - 6} y={yFor(vMax * 0.5) + 3} fontFamily="JetBrains Mono, monospace" fontSize="7.5"
+            fill="#5B89BD" textAnchor="end" opacity="0.7">V/2</text>
+
+      <rect x={PAD_L} y={yFor(2.0)} width={PLOT_W} height={yFor(0.8) - yFor(2.0)}
+            fill="#5B89BD" opacity="0.08"/>
+      <text x={W - PAD_R - 4} y={yFor(1.4) + 2} fontFamily="JetBrains Mono, monospace" fontSize="7"
+            fill="#5B89BD" textAnchor="end" opacity="0.6" letterSpacing="0.1em">TTL UNDEFINED</text>
+
+      {pts && (
+        <polygon
+          points={`${PAD_L},${LOW_Y} ${pts} ${W - PAD_R},${LOW_Y}`}
+          fill={`url(#scopeFill-${label})`}
+          opacity="0.75"
+        />
+      )}
+
+      {pts && (
+        <polyline
+          points={pts}
+          stroke={color} strokeWidth="1.5"
+          fill="none"
+          filter={`url(#scopeGlow-${label})`}
+          strokeLinejoin="round"
+        />
+      )}
+
+      {buf.length > 0 && (
+        <g>
+          <circle cx={W - PAD_R} cy={yFor(buf[buf.length - 1])} r="3"
+                  fill={color} style={{ filter: `drop-shadow(0 0 4px ${color})` }}/>
+        </g>
+      )}
+
+      <text x={PAD_L} y={H - 4} fontFamily="JetBrains Mono, monospace" fontSize="8"
+            fill="#5B89BD" letterSpacing="0.15em">t →</text>
+      <text x={W - PAD_R} y={H - 4} fontFamily="JetBrains Mono, monospace" fontSize="8"
+            fill="#5B89BD" textAnchor="end" letterSpacing="0.15em">100 ms/div</text>
+    </svg>
+  );
+};
+
+window.Scope = Scope;
+
+function computeVoltage(scenario, pressed, contactBreak, noise, noiseBias, rValue, t, debouncedPressed) {
+  const VCC = 5.0;
+  const effPressed = debouncedPressed != null ? debouncedPressed : pressed;
+  const closed = effPressed && !contactBreak;
+
+  let v;
+  if (scenario === 'float') {
+    if (closed) {
+      v = VCC;
+    } else {
+      const slow  = Math.sin(t / 700) * 1.6 * noise;
+      const hum60 = Math.sin(t / 2.65) * 0.7 * noise;
+      const rand  = (Math.random() - 0.5) * 1.4 * noise;
+      const bias  = 2.5 + noiseBias * 2.0;
+      v = bias + slow + hum60 + rand;
+      if (noise > 0.05 && Math.random() < 0.012 * noise) {
+        v = Math.random() < 0.5 ? 0.2 : 4.7;
+      }
+    }
+  } else if (scenario === 'pullup') {
+    v = closed ? 0.0 : VCC;
+    const n = noise * (0.05 + rValue / 200) * (Math.random() - 0.5) * 2;
+    v += n;
+  } else if (scenario === 'pulldown') {
+    v = closed ? VCC : 0.0;
+    const n = noise * (0.05 + rValue / 200) * (Math.random() - 0.5) * 2;
+    v += n;
+  }
+
+  return Math.max(0, Math.min(VCC, v));
+}
+
+function useBouncingSwitch(rawPressed, mode) {
+  const [contactBreak, setContactBreak] = useState(false);
+  const [debouncedPressed, setDebouncedPressed] = useState(false);
+
+  useEffect(() => {
+    if (mode === 'ideal') {
+      setContactBreak(false);
+      return;
+    }
+    let alive = true;
+    let timeouts = [];
+    const burst = () => {
+      const events = 8 + Math.floor(Math.random() * 5);
+      let dt = 0;
+      for (let i = 0; i < events; i++) {
+        dt += 35 + Math.random() * 55;
+        const broken = i % 2 === 0;
+        timeouts.push(setTimeout(() => {
+          if (alive) setContactBreak(broken);
+        }, dt));
+      }
+      timeouts.push(setTimeout(() => {
+        if (alive) setContactBreak(false);
+      }, dt + 20));
+    };
+    burst();
+    return () => {
+      alive = false;
+      timeouts.forEach(clearTimeout);
+    };
+  }, [rawPressed, mode]);
+
+  useEffect(() => {
+    if (mode === 'ideal' || mode === 'bouncing') {
+      setDebouncedPressed(rawPressed);
+      return;
+    }
+    const id = setTimeout(() => setDebouncedPressed(rawPressed), 140);
+    return () => clearTimeout(id);
+  }, [rawPressed, mode]);
+
+  return { contactBreak, debouncedPressed };
+}
+
+const ScenarioCard = ({ kind, title, titleEn, tagText, pressed, contactBreak, debouncedPressed, mode, noise, noiseBias, rValue, notes, statusClass }) => {
+  const [t, setT] = useState(0);
+  useEffect(() => {
+    let raf;
+    const loop = () => { setT(performance.now()); raf = requestAnimationFrame(loop); };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  const voltage = computeVoltage(kind, pressed, contactBreak, noise, noiseBias, rValue, t, mode === 'debounced' ? debouncedPressed : null);
+  const isHIGH = voltage > 3.3;
+  const isLOW  = voltage < 1.2;
+  const effPressed = mode === 'debounced' ? debouncedPressed : pressed;
+  const isFLOAT = kind === 'float' && !(effPressed && !contactBreak);
+
+  const stateLabel = isFLOAT ? 'FLOAT' : isHIGH ? 'HIGH' : isLOW ? 'LOW' : 'UNDEF';
+  const ledOn = isHIGH;
+
+  let Circuit;
+  if (kind === 'float')    Circuit = window.CircuitFloating;
+  if (kind === 'pullup')   Circuit = window.CircuitPullUp;
+  if (kind === 'pulldown') Circuit = window.CircuitPullDown;
+
+  const traceColor = kind === 'float' ? '#FF5C72' : kind === 'pullup' ? '#FFD645' : '#5BFFA8';
+
+  return (
+    <div className={`scenario ${statusClass}`}>
+      <div className="scn-header">
+        <div>
+          <div className="scn-tag">{tagText}</div>
+          <div className="scn-title">
+            {title}
+            <span className="en">{titleEn}</span>
+          </div>
+        </div>
+        <div className="scn-status">
+          STATE<br/><span className="v">{stateLabel}</span>
+        </div>
+      </div>
+
+      <div className="panel">
+        <div className="panel-label">[ 01 ] PHYSICAL · 단면도</div>
+        <div className="switch-stage">
+          <window.SwitchCross pressed={pressed} bouncing={mode !== 'ideal'}/>
+        </div>
+      </div>
+
+      <div className="panel">
+        <div className="panel-label">[ 02 ] SCHEMATIC · 회로도</div>
+        <div className="circuit-stage">
+          <Circuit pressed={pressed} contactBreak={contactBreak} voltage={voltage}/>
+        </div>
+      </div>
+
+      <div className="panel">
+        <div className="panel-label">[ 03 ] OSCILLOSCOPE · V_PIN(t)</div>
+        <div className="scope-stage">
+          <div className="scope-grid"></div>
+          <div className="scope-label">CH1 · V_IN</div>
+          <window.Scope voltage={voltage} color={traceColor} label={kind}/>
+        </div>
+      </div>
+
+      <div className="panel">
+        <div className="panel-label">[ 04 ] OUTPUT · LED + READOUT</div>
+        <div className="readout">
+          <div className={`led ${ledOn ? 'on' : ''}`}></div>
+          <div className="led-label">
+            INPUT
+            <span className={`state ${stateLabel}`}>{stateLabel}</span>
+          </div>
+          <div className="volt-readout">
+            {voltage.toFixed(2)}<span className="u">V</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="notes">
+        <ul>{notes.map((n, i) => <li key={i} dangerouslySetInnerHTML={{ __html: n }}/>)}</ul>
+      </div>
+    </div>
+  );
+};
+
+const SummaryTable = () => (
+  <div className="summary">
+    <table>
+      <thead>
+        <tr>
+          <th>구성</th>
+          <th>평상시 입력</th>
+          <th>버튼 누름</th>
+          <th>특징 / 사용처</th>
+          <th>위험</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr className="danger">
+          <td>FLOATING</td>
+          <td className="red">미정의</td>
+          <td className="yel">HIGH</td>
+          <td>없음 — <span className="em">절대 사용 금지</span></td>
+          <td className="red">EMI · 60Hz hum · ESD에 취약, 핀이 안테나가 됨</td>
+        </tr>
+        <tr className="pullup">
+          <td>PULL-UP</td>
+          <td className="yel">HIGH (5V)</td>
+          <td className="red">LOW (0V)</td>
+          <td><span className="em">Active-LOW</span> · MCU 내장 풀업 (<span className="term">~50kΩ</span>) 사용 가능</td>
+          <td>버튼 누른 동안 <span className="em">I = VCC/R</span> 정전류가 GND로 흐름</td>
+        </tr>
+        <tr className="pulldn">
+          <td>PULL-DOWN</td>
+          <td className="grn">LOW (0V)</td>
+          <td className="yel">HIGH (5V)</td>
+          <td><span className="em">Active-HIGH</span> · 직관적이지만 외부 저항 필요한 MCU多</td>
+          <td>버튼 누른 동안 정전류가 VCC→핀→R→GND로 흐름</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+);
+
+const FormulaBlock = () => (
+  <div className="formula">
+    <div>
+      <h3>1 · 저항값(R) 선택</h3>
+      <p>풀 저항은 <span style={{color:'var(--phos-hi)'}}>두 가지 트레이드오프</span> 사이에서 결정한다 — 너무 작으면 전류 낭비, 너무 크면 노이즈에 약해진다.</p>
+      <span className="eq">I_pull = VCC / R&nbsp;&nbsp; →&nbsp; R = 10 kΩ ⇒ I = 0.5 mA @ 5V</span>
+      <p>일반적으로 <strong style={{color:'var(--high)'}}>4.7 kΩ ~ 10 kΩ</strong> 범위가 표준. I²C 버스나 fast-edge 신호는 1~2 kΩ까지 낮춰 R·C 시상수를 줄이는 편이다.</p>
+
+      <h3>2 · 입력 시상수와 노이즈</h3>
+      <span className="eq">τ = R · C_in&nbsp;&nbsp; (C_in ≈ 5–10 pF)</span>
+      <p>R이 100 kΩ이면 τ ≈ 1 μs로 느려져 <span style={{color:'var(--low)'}}>고속 신호가 무뎌진다</span>. 동시에 안테나 효과로 EMI 픽업이 ↑.</p>
+
+      <h3>3 · TTL / CMOS 임계 전압</h3>
+      <span className="eq">V_IL ≤ 0.8 V&nbsp;·&nbsp; V_IH ≥ 2.0 V&nbsp;(TTL @ 5V)</span>
+      <p>그 사이 0.8–2.0 V가 <span style={{color:'var(--low)'}}>undefined</span> 영역. floating 핀은 정확히 이 영역에 머무르기 쉽다.</p>
+    </div>
+    <div>
+      <h3>4 · 펌웨어 — Arduino 예시</h3>
+      <pre>
+<span className="com">// PULL-UP — Active-LOW: pressed == LOW</span>
+<span className="kw">void</span> setup() &#123;
+  pinMode(<span className="num">2</span>, INPUT_PULLUP);  <span className="com">// 내장 풀업 ON</span>
+&#125;
+<span className="kw">void</span> loop() &#123;
+  <span className="kw">if</span> (digitalRead(<span className="num">2</span>) == LOW) &#123;
+    <span className="com">// 버튼 누름 처리</span>
+  &#125;
+&#125;
+      </pre>
+
+      <h3>5 · 디바운스 — 소프트웨어</h3>
+      <pre>
+<span className="kw">unsigned long</span> last = <span className="num">0</span>;
+<span className="kw">if</span> (digitalRead(BTN) != prev) &#123;
+  <span className="kw">if</span> (millis() - last &gt; <span className="num">20</span>) &#123;  <span className="com">// 20ms 안정창</span>
+    prev = digitalRead(BTN);
+    last = millis();
+    onChange(prev);
+  &#125;
+&#125;
+      </pre>
+
+      <h3>6 · RC 하드웨어 디바운스</h3>
+      <span className="eq">τ = R · C&nbsp;·&nbsp; R=10kΩ, C=100nF ⇒ τ ≈ 1 ms</span>
+      <p>버튼과 병렬로 100nF 커패시터 + 직렬로 10kΩ 풀업이면 모든 채터링이 RC 시정수로 평탄화된다.</p>
+    </div>
+  </div>
+);
+
+const App = () => {
+  const [pressed, setPressed]     = useState(false);
+  const [mode, setMode]           = useState('ideal');
+  const [noise, setNoise]         = useState(0.3);
+  const [noiseBias, setNoiseBias] = useState(0);
+  const [rValue, setRValue]       = useState(10);
+
+  const { contactBreak, debouncedPressed } = useBouncingSwitch(pressed, mode);
+
+  useEffect(() => {
+    const down = (e) => { if (e.code === 'Space' && !e.repeat) { e.preventDefault(); setPressed(true); } };
+    const up   = (e) => { if (e.code === 'Space') { e.preventDefault(); setPressed(false); } };
+    window.addEventListener('keydown', down);
+    window.addEventListener('keyup',   up);
+    return () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); };
+  }, []);
+
+  return (
+    <div className="app crt-screen">
+      <div className="topbar">
+        <div>
+          <div className="brand-row">
+            <span className="dot"></span>
+            <span>EE 101 · DIGITAL I/O</span>
+            <span style={{ color: '#2A4F7A' }}>·</span>
+            <span>LECTURE 03</span>
+          </div>
+          <h1>풀업 · 풀다운 저항의 이해</h1>
+          <div className="subtitle">Pull-Up &amp; Pull-Down Resistors — Why floating inputs are dangerous</div>
+        </div>
+        <div className="meta">
+          <div className="row">SYS &nbsp;<span className="v">CRT-MK4</span></div>
+          <div className="row">VCC &nbsp;<span className="v">5.000 V</span></div>
+          <div className="row">CH1 &nbsp;<span className="v">1V / DIV</span></div>
+          <div className="row">TIME&nbsp;<span className="v">100 ms / DIV</span></div>
+        </div>
+      </div>
+
+      <div className="lede">
+        <strong>왜 이 강의가 필요한가.</strong> 디지털 입력핀은 <span className="em">반드시 HIGH 또는 LOW 두 상태 중 하나</span>여야 한다.
+        그러나 단순히 스위치만 핀에 연결하면, 스위치가 열려 있을 때 핀은 <span className="red">아무데도 연결되지 않은 채(floating) 떠다닌다</span>.
+        이 떠다니는 핀은 주변의 전자기 잡음을 안테나처럼 픽업해서 <span className="red">예측 불가능하게</span> HIGH/LOW를 오간다 —
+        결과적으로 누르지 않은 버튼이 눌린 것처럼 인식되거나, 누른 버튼이 무시된다. 이 강의는 이 문제를 해결하기 위한
+        <span className="yel"> 풀업 저항</span>과 <span className="grn">풀다운 저항</span>의 두 가지 표준 패턴을, 단면도·회로도·오실로스코프·LED 출력의
+        네 단계 가시화로 설명한다. 우측 패널의 <span className="em">PRESS SWITCH</span>(또는 스페이스바)로 직접 시도해보라.
+      </div>
+
+      <div className="controls">
+        <div className="ctrl-group">
+          <div className="ctrl-label">R · 저항값 (Pull resistor)</div>
+          <div className="ctrl-row">
+            <input type="range" min="1" max="100" step="1" value={rValue}
+                   onChange={e => setRValue(+e.target.value)}/>
+            <div className="ctrl-value">{rValue} kΩ</div>
+          </div>
+          <div className="ctrl-label" style={{ marginTop: 10 }}>NOISE · 외란 진폭</div>
+          <div className="ctrl-row">
+            <input type="range" min="0" max="100" step="1" value={Math.round(noise * 100)}
+                   onChange={e => setNoise(+e.target.value / 100)}/>
+            <div className="ctrl-value">{Math.round(noise * 100)} %</div>
+          </div>
+          <div className="ctrl-label" style={{ marginTop: 10 }}>BIAS · 외란 변위 (DC offset)</div>
+          <div className="ctrl-row">
+            <input type="range" min="-100" max="100" step="1" value={Math.round(noiseBias * 100)}
+                   onChange={e => setNoiseBias(+e.target.value / 100)}/>
+            <div className="ctrl-value">{noiseBias >= 0 ? '+' : ''}{(noiseBias * 2.5).toFixed(2)} V</div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+          <button
+            className={`press-btn ${pressed ? 'active' : ''}`}
+            onMouseDown={() => setPressed(true)}
+            onMouseUp={() => setPressed(false)}
+            onMouseLeave={() => setPressed(false)}
+            onTouchStart={(e) => { e.preventDefault(); setPressed(true); }}
+            onTouchEnd={(e)   => { e.preventDefault(); setPressed(false); }}
+          >
+            PRESS &nbsp;SWITCH
+            <span className="key">[ HOLD · 스페이스 ]</span>
+          </button>
+          <div className="mode-radio">
+            {[
+              { id: 'ideal',     label: 'IDEAL',     sub: '이상' },
+              { id: 'bouncing',  label: 'BOUNCING',  sub: '바운싱' },
+              { id: 'debounced', label: 'DEBOUNCED', sub: '디바운싱' },
+            ].map(o => (
+              <label key={o.id} className={`mode-opt ${mode === o.id ? 'on' : ''}`}>
+                <input type="radio" name="mode" checked={mode === o.id}
+                       onChange={() => setMode(o.id)}/>
+                <span className="m-l">{o.label}</span>
+                <span className="m-s">{o.sub}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div className="ctrl-group">
+          <div className="ctrl-label" style={{ textAlign: 'right' }}>MODE 설명</div>
+          <div style={{ fontSize: 11, color: 'var(--phos)', textAlign: 'right', lineHeight: 1.65, marginTop: 6, fontFamily: 'JetBrains Mono, monospace', letterSpacing: '0.04em' }}>
+            {mode === 'ideal' && (
+              <>
+                <div><span style={{ color: 'var(--phos-hi)' }}>IDEAL</span> · 이상적 스위치</div>
+                <div style={{ color: 'var(--phos-dim)', marginTop: 4 }}>접점이 즉시 깨끗하게 닫히고 열림.<br/>현실에는 존재하지 않는 가정.</div>
+              </>
+            )}
+            {mode === 'bouncing' && (
+              <>
+                <div><span style={{ color: 'var(--low)' }}>BOUNCING</span> · 채터링 발생</div>
+                <div style={{ color: 'var(--phos-dim)', marginTop: 4 }}>금속 접점이 충돌하며 ms 단위로<br/>여러 번 단속 → MCU가 다중 입력으로 오인.</div>
+              </>
+            )}
+            {mode === 'debounced' && (
+              <>
+                <div><span style={{ color: 'var(--ok)' }}>DEBOUNCED</span> · 디바운싱 처리</div>
+                <div style={{ color: 'var(--phos-dim)', marginTop: 4 }}>채터링은 그대로 발생하나 펌웨어/RC<br/>필터로 ~140ms 안정 후 단일 천이 출력.</div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid-3">
+        <ScenarioCard
+          kind="float"
+          tagText="A · NO RESISTOR"
+          title="저항이 없는 경우"
+          titleEn="FLOATING INPUT"
+          statusClass="danger"
+          pressed={pressed}
+          contactBreak={contactBreak}
+          debouncedPressed={debouncedPressed}
+          mode={mode}
+          noise={noise}
+          noiseBias={noiseBias}
+          rValue={rValue}
+          notes={[
+            '스위치가 <span class="em">열려 있을 때 입력핀이 어디에도 연결되지 않음</span> → 전위가 미정의(undefined).',
+            '핀에 연결된 도선이 <span class="red">안테나처럼 동작</span>하여 60Hz 전원선 잡음·EMI를 그대로 픽업.',
+            '0.7 ~ 2.0V 사이의 <span class="red">불확정 영역</span>(TTL undefined zone)에 머무르며 HIGH/LOW가 임의로 변동.',
+            '결과 — 누르지 않아도 LED가 깜박이거나, 누른 신호를 인식하지 못하는 <span class="red">치명적 오동작</span>.',
+            '심지어 정전기(ESD) 한 번에 <span class="red">MCU 입력버퍼가 영구 손상</span>될 수 있다 (gate oxide breakdown).',
+          ]}
+        />
+        <ScenarioCard
+          kind="pullup"
+          tagText="B · PULL-UP"
+          title="풀업 저항 구성"
+          titleEn="PULL-UP CONFIGURATION"
+          statusClass="pullup"
+          pressed={pressed}
+          contactBreak={contactBreak}
+          debouncedPressed={debouncedPressed}
+          mode={mode}
+          noise={noise}
+          noiseBias={noiseBias}
+          rValue={rValue}
+          notes={[
+            '저항이 입력핀과 <span class="yel">VCC를 약하게 연결</span> → 평상시(누르지 않을 때) <span class="yel">HIGH</span>로 고정.',
+            '스위치를 누르면 핀이 GND로 직결되어 <span class="em">강하게 LOW</span>로 풀다운됨 → <span class="yel">Active-LOW 입력</span>.',
+            'R이 작을수록 노이즈 면역은 ↑, 그러나 누를 때 흐르는 <span class="em">정전류 I = VCC / R</span>도 ↑.',
+            '일반값 — <span class="em">4.7k ~ 10kΩ</span>. MCU 내장 풀업도 보통 이 범위 (AVR ≈ 50kΩ, STM32 ≈ 40kΩ).',
+            '<span class="term">pinMode(pin, INPUT_PULLUP)</span> 한 줄로 외부 저항 없이 사용 가능 — 가장 흔한 패턴.',
+          ]}
+        />
+        <ScenarioCard
+          kind="pulldown"
+          tagText="C · PULL-DOWN"
+          title="풀다운 저항 구성"
+          titleEn="PULL-DOWN CONFIGURATION"
+          statusClass="pulldn"
+          pressed={pressed}
+          contactBreak={contactBreak}
+          debouncedPressed={debouncedPressed}
+          mode={mode}
+          noise={noise}
+          noiseBias={noiseBias}
+          rValue={rValue}
+          notes={[
+            '저항이 입력핀과 <span class="grn">GND를 약하게 연결</span> → 평상시 <span class="grn">LOW</span>로 고정.',
+            '스위치를 누르면 핀이 VCC로 직결되어 <span class="em">강하게 HIGH</span>로 풀업됨 → <span class="grn">Active-HIGH 입력</span>.',
+            '직관적이지만 — 일부 MCU(예: AVR 8비트)는 <span class="em">내장 풀업만 지원</span>(내장 풀다운 없음). 이 경우 외부 저항 필요.',
+            'STM32, ESP32 등 최신 MCU는 <span class="em">내장 풀다운</span>도 지원 — datasheet에서 GPIO 설정 옵션 확인.',
+            '바운싱은 동일하게 발생 → SW + RC 디바운스 또는 펌웨어 디바운스 필수.',
+          ]}
+        />
+      </div>
+
+      <SummaryTable/>
+      <FormulaBlock/>
+
+      <div className="foot">
+        <div>SIGNAL · GOOD</div>
+        <div>END OF LECTURE 03 · LINE 256/256</div>
+      </div>
+    </div>
+  );
+};
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
