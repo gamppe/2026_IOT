@@ -1,4 +1,4 @@
-from flask import Flask
+﻿from flask import Flask
 
 app = Flask(__name__)
 
@@ -13,4 +13,4 @@ def hello(name):
     return result
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080, debug=True)
+    app.run(host='0.0.0.0', port=8081, debug=True)

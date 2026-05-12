@@ -1,4 +1,4 @@
-import cv2
+﻿import cv2
 from flask import Flask, render_template
 import camera
 
@@ -14,4 +14,4 @@ def cctv():
     return '<h2>카메라 이미지를 읽을 수 없습니다.</h2>'
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080)
+    app.run(host='0.0.0.0', port=8081)
