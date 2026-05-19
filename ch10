@@ -1,0 +1,486 @@
+# 10장. 플라스크와 MQTT를 활용한 IoT 응용시스템 만들기
+
+## 환경 설정 (Slide 3)
+
+```
+pi@pi:~ $ source myenv/bin/activate
+(myenv) pi@pi:~ $
+(myenv) pi@pi:~ $ mkdir ch10
+(myenv) pi@pi:~ $ cd ch10
+(myenv) pi@pi:~/ch10 $
+```
+
+## mos.conf - 웹소켓 설정 (Slide 9)
+
+```
+listener 1883 # 외부 컴퓨터에서 MQTT 프로토콜로 접속 허용
+listener 9001 # 외부 컴퓨터에서 9001 포트로 접속 허용
+protocol websockets # 9001 포트는 웹소켓에만 허용
+allow_anonymous true # 어떤 사용자에게도 접속 허용
+```
+
+mosquitto 실행:
+```
+pi@pi:~ $ mosquitto -c mos.conf
+```
+
+## 예제 10-1 - 10-1pub.py (Slide 15)
+
+```python
+import time
+import paho.mqtt.client as mqtt
+
+ip = "localhost" # 브로커는 이 컴퓨터에 설치되어 있음
+client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+client.connect(ip, 1883) # 브로커의 1883 포트에 연결
+client.loop_start() # 메시지 루프를 실행하는 스레드 생성
+count = 0
+while True:
+	message = input("문자메시지>>") # 사용자로부터 문자열 입력
+	if message == "exit" :
+		break
+	client.publish("letter", message) # "letter" 토픽과 함께 메시지 전송
+	print("메시지 전송: %s" % message)
+client.loop_stop() # 메시지 루프를 실행하는 스레드 종료
+client.disconnect() # 브로커와 연결 종료
+```
+
+## 예제 10-1 - index.html (Slide 16)
+
+```html
+<!DOCTYPE html>
+<html>
+   <head>
+      <meta charset="utf-8">
+      <title>웹소켓으로 MQTT 브로커에 접속</title>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.2/mqttws31.min.js" type="text/javascript"></script>
+      <script src="mqttio1.js" type="text/javascript"></script>
+   </head>
+   <body>
+         <h3>웹소켓으로 mqtt 메시지 수신</h3>
+         <hr>
+         <form id="connection-form">
+            <b>브로커 IP:</b>
+            <input id="broker" type="text" name="broker" value=""><br>
+            <b>포트 번호 :</b>
+            <input id="port" type="text" name="port" value="9001"><br>
+            <b>토픽 문자열 :</b>
+            <input id="topic" type="text" name="topic" value="letter"><br><br>
+            <input type="button" onclick="connect()" value="Connect">
+            <input type="button" onclick="disconnect()" value="Disconnect">
+         </form>
+         <div id="messages"></div>
+   </body>
+</html>
+```
+
+## 예제 10-1 - mqttio1.js (Slide 18-19)
+
+```javascript
+let client = null; // MQTT 클라이언트의 역할을 하는 Client 객체를 가리키는 전역변수
+let connectionFlag = false; // 연결 상태이면 true
+const CLIENT_ID = "client-"+Math.floor((1+Math.random())*0x10000000000).toString(16) // 사용자 ID 랜덤 생성
+
+function connect() { // 브로커에 접속하는 함수
+	if(connectionFlag == true)
+		return; // 현재 연결 상태이므로 다시 연결하지 않음
+
+	// 사용자가 입력한 브로커의 IP 주소와 포트 번호 알아내기
+	let broker = document.getElementById("broker").value; // 브로커의 IP 주소
+	let port = document.getElementById("port").value; // 브로커의 포트 번호
+
+	// id가 message인 DIV 객체에 포트 번호 출력
+	document.getElementById("messages").innerHTML += '<span>브로커에 접속 : ' + 	' 포트 ' + port + '</span><br/>';
+	document.getElementById("messages").innerHTML += '<span>사용자 ID : ' + CLIENT_ID + '</span><br/>';
+
+	// MQTT 메시지 전송 기능을 모두 가징 Paho client 객체 생성
+	client = new Paho.MQTT.Client(broker, Number(port), CLIENT_ID);
+
+	// client 객체에 콜백 함수 등록 및 연결
+	client.onConnectionLost = onConnectionLost; // 접속 끊김 시 onConnectLost() 실행
+	client.onMessageArrived = onMessageArrived; // 메시지 도착 시 onMessageArrived() 실행
+	// client 객체에게 브로커에 접속 지시
+	client.connect({
+		onSuccess:onConnect, // 브로커로부터 접속 응답 시 onConnect() 실행
+	});
+}
+
+// 브로커로부터 접속 성공 응답을 받을 때 호출되는 함수
+function onConnect() {
+	let topic = document.getElementById("topic").value; // 사용자가 입력한 토픽 문자열
+	client.subscribe(topic); // 브로커에 구독 신청
+	// 구독 신청하였음을 <div> 영역에 출력
+	document.getElementById("messages").innerHTML += '<span>구독신청: 토픽 ' + topic + '</span><br/>';
+	connectionFlag = true; // 연결 상태로 설정
+}
+// 접속이 끊어졌을 때 호출되는 함수
+function onConnectionLost(responseObject) { // responseObject는 응답 패킷
+	document.getElementById("messages").innerHTML += '<span>오류 : 접속 끊어짐</span><br/>';
+	if (responseObject.errorCode !== 0) {
+		document.getElementById("messages").innerHTML += '<span>오류 : ' + responseObject.errorMessage + '</span><br/>';
+	}
+	connectionFlag = false; // 연결 되지 않은 상태로 설정
+}
+// 메시지가 도착할 때 호출되는 함수
+function onMessageArrived(msg) { // 매개변수 msg는 도착한 MQTT 메시지를 담고 있는 객체
+	console.log("onMessageArrived: " + msg.payloadString);
+	// 도착한 메시지 출력
+	document.getElementById("messages").innerHTML += '<span>토픽 : ' + msg.destinationName + ' | ' + msg.payloadString +
+		'</span><br/>';
+}
+// disconnection 버튼이 선택되었을 때 호출되는 함수
+function disconnect() {
+	if(connectionFlag == false)
+		return; // 연결 되지 않은 상태이면 그냥 리턴
+	client.disconnect(); // 브로커와 접속 해제
+	document.getElementById("messages").innerHTML += '<span>연결종료</span><br/>';
+	connectionFlag = false; // 연결 되지 않은 상태로 설정
+}
+```
+
+## 예제 10-2 - 10-2app.py (Slide 27)
+
+```python
+from flask import Flask, render_template, request
+
+app = Flask(__name__)
+
+# 브라우저에게, 캐시에 저장된 자바스크립트 파일의 수명을 0으로 설정하여
+# 캐시에 저장된 파일을 사용하지 않도록 지시
+app.config['SEND_FILE_MAX_AGE_DEFAULT']=0
+
+@app.route('/')
+def index():
+        return render_template('10-2.html')
+
+if __name__ == "__main__":
+        app.run(host='0.0.0.0', port=8080, debug=True)
+```
+
+## 예제 10-2 - 10-2mqtt.py (Slide 29)
+
+```python
+import time
+import paho.mqtt.client as mqtt
+import circuit # circuit.py는 초음파 센서로부터 거리를 측정하는 모듈 포함
+
+ip = "localhost" # 현재 브로커는 이 컴퓨터에 설치되어 있음
+
+client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+client.connect(ip, 1883) # 브로커에 연결
+client.loop_start() # 메시지 루프를 실행하는 스레드 생성
+
+while True:
+	distance = circuit.measure_distance() # 초음파 센서로부터 거리 측정
+	client.publish("ultrasonic", distance) # "ultrasonic" 토픽으로 거리 전송
+	time.sleep(1) # 1초 동안 잠자기
+
+client.loop_stop() # 메시지 루프를 실행하는 스레드 종료
+client.disconnect()
+```
+
+## 예제 10-2 - circuit.py (Slide 30)
+
+```python
+import time
+import RPi.GPIO as GPIO
+
+# LED를 켜고 끄는 함수
+def controlLED(on_off): # led 번호의 핀에 on_off(0/1) 값 출력하는 함수
+	global led
+	GPIO.output(led, on_off)
+
+# 초음파 센서를 제어하여 물체와의 거리를 측정하여 거리 값 리턴하는 함수
+def measure_distance():
+	global trig, echo
+	time.sleep(0.2) # 초음파 센서의 준비 시간을 위해 200밀리초 지연
+	GPIO.output(trig, 1) # trig 핀에 1(High) 출력
+	GPIO.output(trig, 0) # trig 핀에 0(Low) 출력. High->Low. 초음파 발사 지시
+
+	while(GPIO.input(echo) == 0): # echo 핀 값이 0->1로 바뀔 때까지 루프
+		pass
+
+	# echo 핀 값이 1이면 초음파가 발사되었음
+	pulse_start = time.time() # 초음파 발사 시간 기록
+	while(GPIO.input(echo) == 1): # echo 핀 값이 1->0으로 바뀔 때까지 루프
+		pass
+
+	# echo 핀 값이 0이 되면 초음파 수신하였음
+	pulse_end = time.time() # 초음파가 되돌아 온 시간 기록
+	pulse_duration = pulse_end - pulse_start # 경과 시간 계산
+	return pulse_duration*340*100/2 # 거리 계산하여 리턴(단위 cm)
+
+# 초음파 센서를 다루기 위한 전역 변수 선언 및 초기화
+trig = 20 # GPIO20
+echo = 16 # GPIO16
+GPIO.setmode(GPIO.BCM)
+GPIO.setwarnings(False)
+GPIO.setup(trig, GPIO.OUT) # GPIO20 핀을 출력으로 지정
+GPIO.setup(echo, GPIO.IN) # GPIO16 핀을 입력으로 지정
+
+# LED를 다루기 위한 전역 변수 선언 및 초기화
+led = 6 # GPIO6
+GPIO.setup(led, GPIO.OUT) # GPIO6 핀을 출력으로 지정
+```
+
+## 예제 10-2 - 10-2.html (Slide 31)
+
+```html
+<!DOCTYPE html>
+<html>
+   <head>
+      <meta charset="utf-8">
+      <title>초음파 센서 모니터링</title>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.2/mqttws31.min.js" type="text/javascript"></script>
+      <script src="./static/mqttio2.js" type="text/javascript"></script>
+      <script>
+            window.addEventListener("load", function () {
+                // http://192...5:8080/에서 192...5의 IP만 끊어내는 코드
+                var url = new String(document.location);
+                ip = (url.split("//"))[1]; // ip = "192...:8080/"
+                ip = (ip.split(":"))[0]; // ip = "192..."
+                document.getElementById("broker").value = ip
+            });
+      </script>
+   </head>
+   <body>
+         <h3>초음파 센서 모니터링</h3>
+         <hr>
+         <form id="connection-form">
+            <b>브로커 IP:</b>
+            <input id="broker" type="text" name="broker" value=""><br>
+            <b>포트 번호 :</b>
+            <input id="port" type="text" name="port" value="9001"><br>
+            <b>토픽 문자열 :</b>
+            <input id="topic" type="text" name="topic" value="ultrasonic"><br><br>
+            <input type="button" onclick="connect()" value="Connect">
+            <input type="button" onclick="disconnect()" value="Disconnect">
+         </form>
+         <div id="messages"></div>
+   </body>
+</html>
+```
+
+## 예제 10-2 실행 (Slide 33)
+
+```
+pi@pi:~ $ source myenv/bin/activate
+(myenv) pi@pi:~ $ cd ch10
+(myenv) pi@pi:~/ch10 $ python 10-2mqtt.py&
+[2] 1877
+...
+(myenv) pi@pi:~/ch10 $ python 10-2app.py
+```
+
+## 예제 10-3 - 10-3app.py (Slide 42)
+
+```python
+from flask import Flask, render_template, request
+
+app = Flask(__name__)
+
+# 브라우저에게, 캐시에 저장된 자바스크립트 파일의 수명을 0으로 설정하여
+# 캐시에 저장된 파일을 사용하지 않도록 지시
+app.config['SEND_FILE_MAX_AGE_DEFAULT']=0
+
+@app.route('/') # url이 /인 경우 index() 함수 실행 지시
+def index():
+	return render_template('10-3.html')
+
+if __name__ == "__main__":
+	app.run(host='0.0.0.0', port=8080, debug=True)
+```
+
+## 예제 10-3 - 10-3mqtt.py (Slide 43)
+
+```python
+import time
+import paho.mqtt.client as mqtt
+import circuit
+
+def on_connect(client, userdata, flag, rc, prop=None):
+	client.subscribe("led") # "led" 토픽으로 구독 신청
+
+def on_message(client, userdata, msg) :
+	on_off = int(msg.payload); # on_off는 0 또는 1의 정수
+	circuit.controlLED(on_off) # LED를 켜거나 끔
+
+ip = "localhost" # 현재 브로커는 이 컴퓨터에 설치되어 있음
+
+client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+client.on_connect = on_connect
+client.on_message = on_message
+
+client.connect(ip, 1883) # 브로커에 연결
+client.loop_start() # 메시지 루프를 실행하는 스레드 생성
+
+# 도착하는 메시지는 on_message() 함수에 의해 처리되어 LED를 켜거나 끄는 작업과
+# 병렬적으로 1초 단위로 초음파 센서로부터 거리를 읽어 전송하는 무한 루프 실행
+while True:
+	distance = circuit.measure_distance() # 초음파 센서로부터 거리 읽기
+	client.publish("ultrasonic", distance) # "ultrasonic" 토픽으로 거리 전송
+	time.sleep(1) # 1초 동안 잠자기
+
+client.loop_stop() # 메시지 루프를 실행하는 스레드 종료
+client.disconnect()
+```
+
+## 예제 10-3 - 10-3.html (Slide 45)
+
+```html
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>Raspberry Pi 제어 및 모니터링</title>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.2/mqttws31.min.js" type="text/javascript"></script>
+		<script src= "./static/mqttio3.js" type="text/javascript"></script>
+		<script>
+			window.addEventListener("load", function () {
+				// http://192...5:8080/에서 192...5의 IP만 끊어내는 코드
+				let url = new String(document.location);
+				ip = (url.split("//"))[1]; // ip = "192...:8080/"
+				ip = (ip.split(":"))[0]; // ip = "192..."
+				document.getElementById("broker").value = ip
+			});
+		</script>
+	</head>
+<body>
+	<h3>Raspberry Pi 제어 및 모니터링</h3>
+	<hr>
+	<form id="connection-form">
+		<b>브로커 IP:</b>
+		<input id="broker" type="text" name="broker" value=""><br>
+		<b>포트 번호 : 9001</b><br>
+		<input type="button" onclick="connect()" value="Connect">
+		<input type="button" onclick="disconnect()" value="Disconnect">
+	</form>
+	<hr>
+	<h3>Led 제어(토픽:led)</h3>
+	<hr>
+	<form id="LED-control-form">
+		<label>on <input type="radio" id="ledOn" name="led" value="1" onclick="return publish('led', this.value)"></label>
+		<label>off <input type="radio" id="ledOff" name="led" value="0" checked onclick="return publish('led', this.value)"><br><br></label>
+	</form>
+	<hr>
+	<h3>초음파 센서를 이용한 거리 측정(토픽:ultrasonic)</h3>
+	<hr>
+	<form id="subscribe-form">
+		<input type="button" onclick="subscribe('ultrasonic')" value="측정시작">
+		<input type="button" onclick="unsubscribe('ultrasonic')" value="측정중단">
+	</form>
+	<div id="messages"></div>
+	</body>
+</html>
+```
+
+## 예제 10-3 - mqttio3.js (Slide 46-47)
+
+```javascript
+let client = null; // MQTT 클라이언트의 역할을 하는 Client 객체를 가리키는 전역변수
+let connectionFlag = false; // 연결 상태이면 true
+const CLIENT_ID = "client-"+Math.floor((1+Math.random())*0x10000000000).toString(16) // 사용자 ID 랜덤 생성
+
+function connect() { // 브로커에 접속하는 함수
+	if(connectionFlag == true)
+		return; // 현재 연결 상태이므로 다시 연결하지 않음
+
+	// 사용자가 입력한 브로커의 IP 주소와 포트 번호 알아내기
+	let broker = document.getElementById("broker").value; // 브로커의 IP 주소
+	let port = 9001 // mosquitto를 웹소켓으로 접속할 포트 번호
+
+	// id가 message인 DIV 객체에 포트 번호 출력
+	document.getElementById("messages").innerHTML += '<span>브로커에 접속 : ' + 	' 포트 ' + port + '</span><br/>';
+	document.getElementById("messages").innerHTML += '<span>사용자 ID : ' + 	CLIENT_ID + '</span><br/>';
+
+	// MQTT 메시지 전송 기능을 모두 가징 Paho client 객체 생성
+	client = new Paho.MQTT.Client(broker, Number(port), CLIENT_ID);
+
+	// client 객체에 콜백 함수 등록 및 연결
+	client.onConnectionLost = onConnectionLost; // 접속 끊김 시 onConnectLost() 실행
+	client.onMessageArrived = onMessageArrived; // 메시지 도착 시 onMessageArrived() 실행
+
+	// client 객체에게 브로커에 접속 지시
+	client.connect({
+		onSuccess:onConnect, // 브로커로부터 접속 응답 시 onConnect() 실행
+	});
+}
+
+// 브로커로의 접속이 성공할 때 호출되는 함수
+function onConnect() {
+	document.getElementById("messages").innerHTML += '<span>connected' + '</span><br/>';
+	connectionFlag = true; // 연결 상태로 설정
+}
+
+function subscribe(topic) {
+	if(connectionFlag != true) { // 연결되지 않은 경우
+		alert("연결되지 않았음");
+		return false;
+	}
+
+	// 구독 신청하였음을 <div> 영역에 출력
+	document.getElementById("messages").innerHTML += '<span>구독신청: 토픽 ' + topic + '</span><br/>';
+	client.subscribe(topic); // 브로커에 구독 신청
+	return true;
+}
+
+function publish(topic, msg) {
+	if(connectionFlag != true) { // 연결되지 않은 경우
+		alert("연결되지 않았음");
+		return false;
+	}
+	client.send(topic, msg, 0, false);
+	return true;
+}
+
+function unsubscribe(topic) {
+	if(connectionFlag != true) return; // 연결되지 않은 경우
+
+	// 구독 신청 취소를 <div> 영역에 출력
+	document.getElementById("messages").innerHTML += '<span>구독신청취소: 토픽 ' + topic + '</span><br/>';
+	client.unsubscribe(topic, null); // 브로커에 구독 신청 취소
+}
+
+// 접속이 끊어졌을 때 호출되는 함수
+function onConnectionLost(responseObject) { // responseObject는 응답 패킷
+	document.getElementById("messages").innerHTML += '<span>오류 : 접속 끊어짐</span><br/>';
+	if (responseObject.errorCode !== 0) {
+		document.getElementById("messages").innerHTML += '<span>오류 : ' + responseObject.errorMessage + '</span><br/>';
+	}
+	connectionFlag = false; // 연결 되지 않은 상태로 설정
+}
+
+// 메시지가 도착할 때 호출되는 함수
+function onMessageArrived(msg) { // 매개변수 msg는 도착한 MQTT 메시지를 담고 있는 객체
+	console.log("onMessageArrived: " + msg.payloadString);
+	// 도착한 메시지 출력
+	document.getElementById("messages").innerHTML += '<span>토픽 : ' + msg.destinationName + ' | ' + msg.payloadString + '</span><br/>';
+}
+
+// disconnection 버튼이 선택되었을 때 호출되는 함수
+function disconnect() {
+	if(connectionFlag == false)
+		return; // 연결 되지 않은 상태이면 그냥 리턴
+
+	// 켜진 led 끄기
+	if(document.getElementById("ledOn").checked == true) {
+		client.send('led', "0", 0, false); // led를 끄도록 메시지 전송
+		document.getElementById("ledOff").checked = true;
+	}
+
+	client.disconnect(); // 브로커와 접속 해제
+	document.getElementById("messages").innerHTML += '<span>연결종료</span><br/>';
+	connectionFlag = false; // 연결 되지 않은 상태로 설정
+}
+```
+
+## 예제 10-3 실행 (Slide 48)
+
+```
+pi@pi:~ $ source myenv/bin/activate
+(myenv) pi@pi:~ $ cd ch10
+(myenv) pi@pi:~/ch10 $ python 10-3mqtt.py&
+[2] 5185
+...
+(myenv) pi@pi:~/ch10 $ python 10-3app.py
+```

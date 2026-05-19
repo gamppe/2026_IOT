@@ -1,0 +1,173 @@
+# 9장. 직렬 통신 - 온습도, 조도 센서 다루기
+
+## 환경 설정 (Slide 3)
+
+```
+pi@pi:~ $ source myenv/bin/activate
+(myenv) pi@pi:~ $
+(myenv) pi@pi:~ $ mkdir ch09
+(myenv) pi@pi:~ $ cd ch09
+(myenv) pi@pi:~/ch09 $
+```
+
+## I2C 활성화 (Slide 12)
+
+```
+$ sudo raspi-config
+# 3 Interface option 선택 → I5 I2C 선택 → enable
+$ lsmod
+$ ls –l /dev/i2c*
+```
+
+## I2C 버스 확인 (Slide 13)
+
+```
+$ lsmod | grep i2c
+$ ls –l /dev/i2c*
+```
+
+## i2c-tools 설치 및 Slave 장치 확인 (Slide 14)
+
+```
+$ sudo apt-get install i2c-tools
+$ sudo i2cdetect –y 1
+```
+
+```
+pi@pi:~ $ sudo i2cdetect -y 1
+     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
+00:          -- -- -- -- -- -- -- -- -- -- -- -- --
+10: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+20: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+30: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+40: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+50: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+60: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+70: -- -- -- -- -- -- -- --
+pi@pi:~ $
+```
+
+## HTU21D 라이브러리 설치 (Slide 20)
+
+```
+pi@pi:~ $ source myenv/bin/activate
+(myenv) pi@pi:~ $ pip install adafruit-circuitpython-htu21d
+(myenv) pi@pi:~ $ pip install busio
+```
+
+## 예제 9-1 - 9-1.py (Slide 21)
+
+```python
+import time
+import RPi.GPIO as GPIO
+from adafruit_htu21d import HTU21D
+import busio
+
+def getTemperature(sensor) : # 센서로부터 온도 값 수신 함수
+	return float(sensor.temperature) # HTU21D 장치로부터 온도 값 읽기
+
+def getHumidity(sensor) : # 센서로부터 습도 값 수신 함수
+	return float(sensor.relative_humidity) # HTU21D 장치로부터 습도 값 읽기
+
+GPIO.setmode(GPIO.BCM)
+GPIO.setwarnings(False)
+sda = 2 # GPIO2 핀. sda 이름이 붙여진 핀
+scl = 3 # GPIO3 핀. scl 이름이 붙여진 핀
+i2c = busio.I2C(scl, sda) # I2C 버스 통신을 실행하는 객체 생성
+sensor = HTU21D(i2c) # I2C 버스에서 HTU21D 장치를 제어하는 객체 리턴
+while True :
+	print("현재 온도는 %4.1d" % getTemperature(sensor))
+	print("현재 습도는 %4.1d %%" % getHumidity(sensor))
+	time.sleep(1) # 1초동안 잠자기
+```
+
+## 예제 9-2 - 9-2.py (Slide 22)
+
+```python
+import time
+import RPi.GPIO as GPIO
+from adafruit_htu21d import HTU21D
+import busio
+
+# pin에 연결된 LED에 value(0/1) 값을 출력하여
+# LED를 켜거나 끄는 함수
+def led_on_off(pin, value):
+	GPIO.output(pin, value)
+
+# 센서로부터 온도 값을 수신하여 리턴하는 함수
+def getTemperature(sensor) :
+	return float(sensor.temperature)
+
+GPIO.setmode(GPIO.BCM)
+GPIO.setwarnings(False)
+led = 6 # GPIO6 핀
+GPIO.setup(led, GPIO.OUT) # GPIO6 핀을 출력으로 지정
+sda = 2 # GPIO2 핀. sda 이름이 붙여진 핀
+scl = 3 # GPIO3 핀. scl 이름이 붙여진 핀
+i2c = busio.I2C(scl, sda) # I2C 버스 통신을 실행하는 객체 생성
+sensor = HTU21D(i2c) # I2C 버스에서 HTU21D 장치를 제어하는 객체 리턴
+THRESHOLD = 25 # 체크할 온도
+prev_temp = 0 # 0으로 초기화
+
+while True :
+	cur_temp = getTemperature(sensor)
+	if prev_temp < THRESHOLD and cur_temp >= THRESHOLD:
+		led_on_off(led, 1) # LED에 불 켜기
+	elif prev_temp >= THRESHOLD and cur_temp < THRESHOLD:
+		led_on_off(led, 0) # LED에 불 끄기
+	else: # 동일한 상태인 경우
+		pass # 이전 상태 그대로 둠
+	print("현재 온도는 %4.1d" % cur_temp)
+	prev_temp = cur_temp # 현재 온도는 이전 온도가 됨
+	time.sleep(1) # 1초 간격으로 실행
+```
+
+## SPI 활성화 (Slide 29)
+
+```
+$ sudo raspi-config
+# 3 Interface option 선택 → I4 SPI 선택 → enable
+$ lsmod
+```
+
+## SPI 활성화 확인 (Slide 30)
+
+```
+$ lsmod | grep spi
+$ ls –l /dev/spi*
+```
+
+```
+pi@pi:~ $ ls -l /dev/spi*
+crw-rw---- 1 root spi 153, 0 10월 29 02:34 /dev/spidev0.0
+crw-rw---- 1 root spi 153, 1 10월 29 02:34 /dev/spidev0.1
+```
+
+## Adafruit_MCP3008 설치 (Slide 37)
+
+```
+pi@pi:~ $ source myenv/bin/activate
+(myenv) pi@pi:~ $ pip install Adafruit_MCP3008
+```
+
+```python
+import Adafruit_MCP3008
+
+mcp = Adafruit_MCP3008.MCP3008(clk=11, cs=8, miso=9, mosi=10)
+light = mcp.read_adc(0)
+```
+
+## 예제 9-3 - 9-3.py (Slide 38)
+
+```python
+import time
+import RPi.GPIO as GPIO
+import Adafruit_MCP3008
+
+GPIO.setmode(GPIO.BCM)
+GPIO.setwarnings(False)
+mcp = Adafruit_MCP3008.MCP3008(clk=11, cs=8, miso=9, mosi=10)
+while(True):
+        print(mcp.read_adc(0)) # channel 0에 연결된 조도 센서로부터 조도값 읽기
+        time.sleep(1)
+```

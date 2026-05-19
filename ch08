@@ -1,0 +1,278 @@
+# 8장. GPIO와 LED, 스위치, 초음파 센서 다루기
+
+## 환경 설정 (Slide 3)
+
+```
+pi@pi:~ $ source myenv/bin/activate
+(myenv) pi@pi:~ $
+(myenv) pi@pi:~ $ mkdir ch08
+(myenv) pi@pi:~ $ cd ch08
+(myenv) pi@pi:~/ch08 $
+```
+
+## RPi.GPIO 설치 (Slide 9)
+
+```
+pi@pi:~ $ source myenv/bin/activate
+(myenv) pi@pi:~ $
+(myenv) pi@pi:~ $ pip install RPi.GPIO
+```
+
+## GPIO 모드 설정 (Slide 11)
+
+```python
+GPIO.setmode(GPIO.BOARD) # BOARD 모드 선택
+GPIO.setmode(GPIO.BCM) # BCM 모드 선택
+
+mode = GPIO.getmode() # GPIO.BOARD, GPIO.BCM, None 중 하나 리턴
+```
+
+## GPIO 핀 입출력 설정 (Slide 12)
+
+```python
+GPIO.setup(6, GPIO.IN) 	# GPIO6 핀을 입력으로 설정
+GPIO.setup(21, GPIO.OUT)	# GPIO21 핀을 출력으로 설정
+
+value = GPIO.input(6)		# GPIO6 핀으로부터 디지털 신호 읽기
+
+GPIO.output(21, 1)
+GPIO.output(21, GPIO.HIGH)
+GPIO.output(21, True)
+
+GPIO.output(21, 0)
+GPIO.output(21, GPIO.LOW)
+GPIO.output(21, False)
+```
+
+## GPIO 버전 및 클린업 (Slide 13)
+
+```python
+print(GPIO.VERSION)
+
+GPIO.cleanup()
+```
+
+## 바람직한 GPIO 프로그램 구조 (Slide 15)
+
+```python
+import RPi.GPIO as GPIO
+
+try:	#
+	# 개발자가 작성하고자 하는 목적 코드들
+	#
+except KeyboardInterrupt: # [Ctrl+C] 키가 입력되어 종료하는 경우
+	# 종료 전 처리할 코드
+except : # 오류로 인해 종료하는 경우
+	# 오류 처리 코드
+finally: # 종료하는 모든 경우(정상적이든 오류로 인한 종료 등)에 실행되는 코드
+	GPIO.cleanup()
+```
+
+## 예제 8-1 - 8-1.py (Slide 24)
+
+```python
+import time
+import RPi.GPIO as GPIO
+
+# pin에 연결된 LED에 value(0/1) 값을 출력하여 LED를 켜거나 끄는 함수
+def led_on_off(pin, value):
+	GPIO.output(pin, value)
+
+GPIO.setmode(GPIO.BCM) # BCM 모드로 작동
+GPIO.setwarnings(False) # 경고글이 출력되지 않게 설정
+led = 6 # GPIO6 핀
+GPIO.setup(led, GPIO.OUT) # GPIO6 핀을 출력으로 지정
+on_off = 1 # 1은 디지털 출력 값. 1 = 5V
+print("LED를 지켜 보세요.")
+# 5번 LED를 깜박임
+for i in range(5):
+	led_on_off(led, on_off) # led가 연결된 핀에 1또는 0 값 출력
+	time.sleep(1) # 1초 동안 잠자기
+	print(i, end=' ', flush=True)
+	on_off = 0 if on_off == 1 else 1 # 0과 1의 토글링
+print()
+GPIO.cleanup()
+```
+
+## 예제 8-1 개선 - 8-1-adv.py (Slide 25)
+
+```python
+import time
+import RPi.GPIO as GPIO
+
+try:
+	# pin에 연결된 LED에 value(0/1) 값을 출력하여 LED를 켜거나 끄는 함수
+	def led_on_off(pin, value):
+		GPIO.output(pin, value)
+	GPIO.setmode(GPIO.BCM) # BCM 모드로 작동
+	GPIO.setwarnings(False) # 경고글이 출력되지 않게 설정
+	led = 6 # GPIO6 핀
+	GPIO.setup(led, GPIO.OUT) # GPIO6 핀을 출력으로 지정
+	on_off = 1 # 1은 디지털 출력 값. 1 = 5V
+	print("LED를 지켜보세요.")
+	# 5번 LED를 깜박임
+	for i in range(5):
+		led_on_off(led, on_off) # led가 연결된 핀에 1또는 0 값 출력
+		time.sleep(1) # 1초 동안 잠자기
+		print(i, end=' ', flush=True)
+		on_off = 0 if on_off == 1 else 1 # 0과 1의 토글링
+except KeyboardInterrupt:
+	print("Ctrl+C 종료")
+finally:
+	print("cleanup")
+	GPIO.cleanup()
+```
+
+## 풀다운/풀업 설정 (Slide 28)
+
+```python
+GPIO.setup(21, GPIO.IN, GPIO.PUD_DOWN) # GPIO21 핀에 풀업 효과 지정
+GPIO.setup(21, GPIO.IN, GPIO.PUD_UP) # GPIO21 핀에 풀다운 효과 지정
+```
+
+## 예제 8-2 - 8-2.py (Slide 32)
+
+```python
+import time
+import RPi.GPIO as GPIO
+
+# pin에 연결된 LED에 value(0/1) 값을 출력하여 LED를 켜거나 끄는 함수
+def led_on_off(pin, value):
+	GPIO.output(pin, value)
+
+GPIO.setmode(GPIO.BCM) # BCM 모드로 작동
+GPIO.setwarnings(False) # 경고글이 출력되지 않게 설정
+led = 6 # GPIO6 핀
+GPIO.setup(led, GPIO.OUT) # GPIO6 핀을 출력으로 지정
+button = 21 # GPIO21 핀
+GPIO.setup(button, GPIO.IN, GPIO.PUD_DOWN) # GPIO21 핀을 입력으로 지정하고 풀다운 효과 지정
+print("스위치를 누르고 있는 동안 LED가 켜지고 놓으면 꺼집니다.")
+while True :
+	status = GPIO.input(button) # GPIO21 핀로부터 디지털 값(0/1) 읽기
+	led_on_off(led, status) # 읽은 값(0/1)을 led(GPIO6 핀)로 출력
+GPIO.cleanup()
+```
+
+## 폴링 방법 (Slide 35)
+
+```python
+while GPIO.input(switch_pin) == GPIO.LOW:
+	time.sleep(0.01) # 10ms 대기
+
+# while 문을 벗어난 상태는 GPIO.input(switch_pin)이 GPIO.HIGH를 리턴한 경우
+...
+```
+
+## 예제 8-3 - 8-3.py (Slide 38)
+
+```python
+import RPi.GPIO as GPIO
+import time
+
+# button이 눌러질 때 호출되는 콜백 함수
+def button_pressed(channel):
+	print("%d 핀에 연결된 스위치 눌러짐" % channel)
+
+GPIO.setmode(GPIO.BCM)
+GPIO.setwarnings(False)
+button = 21 # GPIO21
+GPIO.setup(button, GPIO.IN, GPIO.PUD_DOWN)
+# button을 누르면 10ms의 디바운스 후 button_pressed()가 호출되도록 설정
+GPIO.add_event_detect(button, GPIO.RISING, button_pressed, bouncetime=10)
+while True:
+	pass # 사용자는 필요한 다른 작업을 이곳에 작성한다.
+```
+
+## 예제 8-4 - 8-4.py (Slide 39)
+
+```python
+import time
+import RPi.GPIO as GPIO
+
+# pin에 연결된 LED에 value(0/1) 값을 출력하여 LED를 켜거나 끄는 함수
+def led_on_off(pin, value):
+	GPIO.output(pin, value)
+
+# button이 눌러질 때 호출되는 콜백 함수
+def button_pressed(pin):
+	global btn_status # btn_status는 전역 변수임
+	global led # led는 전역 변수임
+	btn_status = 0 if btn_status == 1 else 1
+	led_on_off(led, btn_status)
+
+led = 6 # GPIO6
+button = 21 # GPIO21
+btn_status = 0 # 현재 버튼이 눌러진 상태. 1이면 눌러져 있음
+GPIO.setmode(GPIO.BCM)
+GPIO.setwarnings(False)
+GPIO.setup(led, GPIO.OUT) # led 핀을 출력으로 지정
+GPIO.setup(button, GPIO.IN, GPIO.PUD_DOWN) # button 핀을 입력으로 지정
+# button을 누르면 10ms의 디바운스 후 button_pressed()가 호출되도록 설정
+GPIO.add_event_detect(button, GPIO.RISING, button_pressed, 10)
+print("스위치를 누르면 LED가 On되고 다시 누르면 Off 됩니다")
+while True:
+	pass # 사용자는 필요한 다른 작업이 있으면 이곳에 작성한다.
+```
+
+## 예제 8-5 - 8-5.py (Slide 43)
+
+```python
+import time
+import RPi.GPIO as GPIO
+
+def increase(pwm):
+	print("increase the light")
+	for value in range(0, 100): # 5초 동안 루프
+		pwm.ChangeDutyCycle(value)
+		time.sleep(0.05)
+
+def decrease(pwm):
+	print("decrease the light")
+	for value in range(99, -1, -1): # 5초 동안 루프
+		pwm.ChangeDutyCycle(value)
+		time.sleep(0.05)
+
+GPIO.setmode(GPIO.BCM)
+GPIO.setwarnings(False)
+led = 6 # GPIO6 핀에 LED 연결
+GPIO.setup(led, GPIO.OUT) # GPIO6 핀을 출력으로 지정
+GPIO.output(led, GPIO.LOW) # GPIO6 핀에 0V 출력
+pwm = GPIO.PWM(led, 100) # GPIO6 핀에 100Hz의 신호를 발생하도록 설정
+pwm.start(0) # GPIO6 핀에 듀티 사이클 0%, 100Hz의 신호 발생 시작
+while True:
+	increase(pwm) # 5초동안 듀티 사이클 증가. LED를 점점 밝게
+	decrease(pwm) # 5초동안 듀티 사이클 감소. LED를 점점 어둡게
+```
+
+## 예제 8-6 - 8-6.py (Slide 50)
+
+```python
+import time
+import RPi.GPIO as GPIO
+
+def measureDistance(trig, echo):
+	time.sleep(0.2) # 초음파 센서의 준비 시간을 위해 필연적인 200밀리초 지연
+	GPIO.output(trig, 1) # trig 핀에 1(High) 출력
+	GPIO.output(trig, 0) # trig 핀 신호 High->Low. 초음사 발사 지시
+	while(GPIO.input(echo) == 0): # echo 핀 값이 0->1로 바뀔 때까지 루프
+		pass
+	# echo 핀 값이 1이면 초음파가 발사되었음
+	pulse_start = time.time() # 초음파 발사 시간 기록
+	while(GPIO.input(echo) == 1): # echo 핀 값이 1->0으로 바뀔 때까지 루프
+		pass
+	# echo 핀 값이 0이 되면 초음파 수신하였음
+	pulse_end = time.time() # 초음파가 되돌아 온 시간 기록
+	pulse_duration = pulse_end - pulse_start # 경과 시간 계산
+	return pulse_duration*340*100/2 # 거리 계산하여 리턴(단위 cm)
+
+trig = 20 # GPIO20
+echo = 16 # GPIO16
+GPIO.setmode(GPIO.BCM)
+GPIO.setwarnings(False)
+GPIO.setup(trig, GPIO.OUT)
+GPIO.setup(echo, GPIO.IN)
+while True:
+	distance = measureDistance(trig, echo)
+	time.sleep(0.5) # 0.5초 간격으로 거리 측정(0.3으로 하면 정확)
+	print("물체와의 거리는 %fcm 입니다." % distance)
+```
