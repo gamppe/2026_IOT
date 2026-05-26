@@ -1,4 +1,5 @@
 import io
+import os
 import time
 import paho.mqtt.client as mqtt
 
@@ -7,6 +8,7 @@ def on_connect(client, userdata, flag, rc, prop=None):
 	client.subscribe("jpeg")
 
 def on_message(client, userdata, msg):
+	os.makedirs('./data', exist_ok=True)
 	filename = './data/image%d.jpg' % (time.time()*10)
 	file = open(filename, "wb") # 파일 열기. 없으면 새로 생성
 	file.write(msg.payload) # 수신한 이미지를 파일에 쓰기
