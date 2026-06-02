@@ -14,31 +14,266 @@
 				document.getElementById("broker").value = ip
 			});
 		</script>
+	<style>
+		* {
+			box-sizing: border-box;
+			margin: 0;
+			padding: 0;
+		}
+
+		body {
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+			min-height: 100vh;
+			display: flex;
+			justify-content: center;
+			align-items: flex-start;
+			padding: 40px 20px;
+			color: #e0e0e0;
+		}
+
+		.container {
+			background: rgba(255, 255, 255, 0.05);
+			backdrop-filter: blur(10px);
+			border: 1px solid rgba(255, 255, 255, 0.1);
+			border-radius: 16px;
+			padding: 32px;
+			width: 100%;
+			max-width: 520px;
+			box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+		}
+
+		h1.page-title {
+			font-size: 1.5rem;
+			font-weight: 700;
+			color: #e94560;
+			margin-bottom: 24px;
+			display: flex;
+			align-items: center;
+			gap: 10px;
+		}
+
+		h1.page-title::before {
+			content: "🍓";
+			font-size: 1.6rem;
+		}
+
+		.section {
+			background: rgba(255, 255, 255, 0.04);
+			border: 1px solid rgba(255, 255, 255, 0.08);
+			border-radius: 12px;
+			padding: 20px;
+			margin-bottom: 20px;
+		}
+
+		.section-title {
+			font-size: 0.85rem;
+			font-weight: 600;
+			text-transform: uppercase;
+			letter-spacing: 0.08em;
+			color: #e94560;
+			margin-bottom: 14px;
+			display: flex;
+			align-items: center;
+			gap: 8px;
+		}
+
+		.field-row {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+			margin-bottom: 10px;
+			flex-wrap: wrap;
+		}
+
+		.field-label {
+			font-size: 0.9rem;
+			color: #aaa;
+			min-width: 90px;
+		}
+
+		input[type="text"] {
+			flex: 1;
+			background: rgba(255, 255, 255, 0.08);
+			border: 1px solid rgba(255, 255, 255, 0.15);
+			border-radius: 8px;
+			padding: 8px 12px;
+			color: #fff;
+			font-size: 0.95rem;
+			outline: none;
+			transition: border-color 0.2s;
+		}
+
+		input[type="text"]:focus {
+			border-color: #e94560;
+		}
+
+		.port-info {
+			font-size: 0.85rem;
+			color: #888;
+			margin-bottom: 14px;
+		}
+
+		.btn-row {
+			display: flex;
+			gap: 10px;
+		}
+
+		.btn {
+			flex: 1;
+			padding: 10px 0;
+			border: none;
+			border-radius: 8px;
+			font-size: 0.9rem;
+			font-weight: 600;
+			cursor: pointer;
+			transition: transform 0.1s, opacity 0.2s;
+		}
+
+		.btn:active {
+			transform: scale(0.97);
+		}
+
+		.btn-connect {
+			background: linear-gradient(135deg, #e94560, #c0392b);
+			color: #fff;
+		}
+
+		.btn-connect:hover { opacity: 0.9; }
+
+		.btn-disconnect {
+			background: rgba(255, 255, 255, 0.1);
+			color: #ccc;
+			border: 1px solid rgba(255, 255, 255, 0.15);
+		}
+
+		.btn-disconnect:hover { background: rgba(255, 255, 255, 0.15); }
+
+		/* LED toggle */
+		.led-toggle {
+			display: flex;
+			gap: 12px;
+		}
+
+		.led-option {
+			flex: 1;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			gap: 8px;
+			padding: 12px;
+			border-radius: 10px;
+			border: 2px solid rgba(255, 255, 255, 0.1);
+			cursor: pointer;
+			transition: all 0.2s;
+			font-weight: 600;
+			font-size: 0.95rem;
+			background: rgba(255, 255, 255, 0.04);
+		}
+
+		.led-option:has(input:checked).on-option {
+			border-color: #2ecc71;
+			background: rgba(46, 204, 113, 0.15);
+			color: #2ecc71;
+		}
+
+		.led-option:has(input:checked).off-option {
+			border-color: #e74c3c;
+			background: rgba(231, 76, 60, 0.15);
+			color: #e74c3c;
+		}
+
+		.led-option input[type="radio"] {
+			display: none;
+		}
+
+		.led-dot {
+			width: 12px;
+			height: 12px;
+			border-radius: 50%;
+			background: currentColor;
+			box-shadow: 0 0 8px currentColor;
+		}
+
+		/* Sensor buttons */
+		.sensor-btn-row {
+			display: flex;
+			gap: 10px;
+		}
+
+		.btn-start {
+			background: linear-gradient(135deg, #27ae60, #1e8449);
+			color: #fff;
+		}
+
+		.btn-stop {
+			background: rgba(231, 76, 60, 0.2);
+			color: #e74c3c;
+			border: 1px solid rgba(231, 76, 60, 0.3);
+		}
+
+		#messages {
+			margin-top: 16px;
+			min-height: 48px;
+			background: rgba(0, 0, 0, 0.3);
+			border-radius: 8px;
+			padding: 12px 16px;
+			font-family: 'Courier New', monospace;
+			font-size: 0.9rem;
+			color: #00e676;
+			border: 1px solid rgba(0, 230, 118, 0.15);
+			white-space: pre-wrap;
+		}
+	</style>
 	</head>
 	<body>
-		<h3>Raspberry Pi 제어 및 모니터링</h3>
-		<hr>
-		<form id="connection-form">
-			<b>브로커 IP:</b>
-			<input id="broker" type="text" name="broker" value=""><br>
-			<b>포트 번호 : 9001</b><br>
-			<input type="button" onclick="connect()" value="Connect">
-			<input type="button" onclick="disconnect()" value="Disconnect">
-		</form>
-		<hr>
-		<h3>Led 제어(토픽:led)</h3>
-		<hr>
-		<form id="LED-control-form">
-			<label>on <input type="radio" id="ledOn" name="led" value="1" onclick="return publish('led', this.value)"></label>
-			<label>off <input type="radio" id="ledOff" name="led" value="0" checked onclick="return publish('led', this.value)"><br><br></label>
-		</form>
-		<hr>
-		<h3>초음파 센서를 이용한 거리 측정(토픽:ultrasonic)</h3>
-		<hr>
-		<form id="subscribe-form">
-			<input type="button" onclick="subscribe('ultrasonic')" value="측정시작">
-			<input type="button" onclick="unsubscribe('ultrasonic')" value="측정중단">
-		</form>
-		<div id="messages"></div>
+		<div class="container">
+			<h1 class="page-title">Raspberry Pi 제어 및 모니터링</h1>
+
+			<!-- 연결 설정 -->
+			<div class="section">
+				<div class="section-title">🔌 브로커 연결</div>
+				<form id="connection-form">
+					<div class="field-row">
+						<span class="field-label">브로커 IP</span>
+						<input id="broker" type="text" name="broker" value="">
+					</div>
+					<div class="port-info">포트 번호 : 9001</div>
+					<div class="btn-row">
+						<button type="button" class="btn btn-connect" onclick="connect()">Connect</button>
+						<button type="button" class="btn btn-disconnect" onclick="disconnect()">Disconnect</button>
+					</div>
+				</form>
+			</div>
+
+			<!-- LED 제어 -->
+			<div class="section">
+				<div class="section-title">💡 LED 제어 <span style="font-weight:400;color:#666;text-transform:none;letter-spacing:0;">(토픽: led)</span></div>
+				<form id="LED-control-form">
+					<div class="led-toggle">
+						<label class="led-option on-option">
+							<input type="radio" id="ledOn" name="led" value="1" onclick="return publish('led', this.value)">
+							<span class="led-dot"></span> ON
+						</label>
+						<label class="led-option off-option">
+							<input type="radio" id="ledOff" name="led" value="0" checked onclick="return publish('led', this.value)">
+							<span class="led-dot"></span> OFF
+						</label>
+					</div>
+				</form>
+			</div>
+
+			<!-- 초음파 센서 -->
+			<div class="section">
+				<div class="section-title">📡 초음파 거리 측정 <span style="font-weight:400;color:#666;text-transform:none;letter-spacing:0;">(토픽: ultrasonic)</span></div>
+				<form id="subscribe-form">
+					<div class="sensor-btn-row">
+						<button type="button" class="btn btn-start btn-connect" style="background:linear-gradient(135deg,#27ae60,#1e8449);" onclick="subscribe('ultrasonic')">측정 시작</button>
+						<button type="button" class="btn btn-stop btn-disconnect" onclick="unsubscribe('ultrasonic')">측정 중단</button>
+					</div>
+				</form>
+				<div id="messages"></div>
+			</div>
+		</div>
 	</body>
 </html>
